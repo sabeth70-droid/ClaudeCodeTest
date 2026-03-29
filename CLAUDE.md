@@ -32,6 +32,10 @@ git push origin master
 
 Keep commit messages clear and specific (e.g. `"add win highlight animation to tictactoe"` not `"update files"`). Commit logical units of work — don't batch unrelated changes into one commit.
 
+## Versioning Rule
+
+Every significant edit to an existing app must be saved as a **new versioned file** (e.g. `distance-calculator-v2.html` → `distance-calculator-v3.html`) and committed + pushed to GitHub. Never overwrite the previous version with big changes. Small fixes (typos, model name swap, single-line patches) may be applied in place, but any feature addition, redesign, or multi-area change warrants a new version.
+
 ## Architecture Notes
 
 Both apps follow the same pattern:
