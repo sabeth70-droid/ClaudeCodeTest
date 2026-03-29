@@ -207,6 +207,26 @@
     .result-value.accent { color: var(--accent); }
     .result-value.blue { color: var(--accent2); }
 
+    .unit-toggle {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .unit-toggle.hidden { display: none; }
+    .unit-btn {
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .unit-btn:hover { background: var(--surface2); color: var(--text); }
+    .unit-btn.active { background: var(--success); color: #0d1117; }
+
     .result-divider {
       height: 1px;
       background: var(--border);
@@ -662,7 +682,13 @@
     <div class="panel hidden" id="results-panel">
       <div class="panel-header">
         <span>Results</span>
-        <button class="panel-close" id="results-close">&#x2715;</button>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="unit-toggle hidden" id="depth-unit-toggle">
+            <button class="unit-btn active" id="unit-btn-ft">ft</button>
+            <button class="unit-btn" id="unit-btn-in">in</button>
+          </div>
+          <button class="panel-close" id="results-close">&#x2715;</button>
+        </div>
       </div>
       <div class="panel-body">
         <div class="result-row">
@@ -670,7 +696,7 @@
           <span class="result-value accent" id="res-px">—</span>
         </div>
         <div class="result-row">
-          <span class="result-label">Real distance</span>
+          <span class="result-label" id="res-real-label">Real distance</span>
           <span class="result-value blue" id="res-real">—</span>
         </div>
         <div class="result-row">
@@ -694,10 +720,6 @@
         <div class="result-row" id="res-depth-b-row" style="display:none">
           <span class="result-label">B depth</span>
           <span class="result-value" id="res-depth-b" style="font-size:12px;color:var(--muted)">—</span>
-        </div>
-        <div class="result-row" id="res-3d-row" style="display:none">
-          <span class="result-label">3D distance</span>
-          <span class="result-value" id="res-3d" style="font-size:13px;color:var(--success)">—</span>
         </div>
         <button class="copy-btn" id="copy-btn">Copy to clipboard</button>
       </div>
@@ -773,6 +795,13 @@
 
   // Depth analysis state
   let depthAnalysis = null; // null or { objects, scene, focalLength, imgW, imgH, analysis_notes }
+  let depthUnit = 'ft'; // 'ft' | 'in'
+
+  function metersToDisplay(m) {
+    return depthUnit === 'ft'
+      ? (m * 3.28084).toFixed(2) + ' ft'
+      : (m * 39.3701).toFixed(1) + ' in';
+  }
 
   // ── Elements ───────────────────────────────────────────────────────────────
   const canvas      = document.getElementById('canvas');
@@ -803,13 +832,15 @@
   const resB     = document.getElementById('res-b');
   const copyBtn  = document.getElementById('copy-btn');
 
-  const depthDivider  = document.getElementById('depth-divider');
-  const resDepthARow  = document.getElementById('res-depth-a-row');
-  const resDepthBRow  = document.getElementById('res-depth-b-row');
-  const res3dRow      = document.getElementById('res-3d-row');
-  const resDepthA     = document.getElementById('res-depth-a');
-  const resDepthB     = document.getElementById('res-depth-b');
-  const res3d         = document.getElementById('res-3d');
+  const depthDivider   = document.getElementById('depth-divider');
+  const resDepthARow   = document.getElementById('res-depth-a-row');
+  const resDepthBRow   = document.getElementById('res-depth-b-row');
+  const resDepthA      = document.getElementById('res-depth-a');
+  const resDepthB      = document.getElementById('res-depth-b');
+  const resRealLabel   = document.getElementById('res-real-label');
+  const depthUnitToggle= document.getElementById('depth-unit-toggle');
+  const unitBtnFt      = document.getElementById('unit-btn-ft');
+  const unitBtnIn      = document.getElementById('unit-btn-in');
 
   const calibStep1    = document.getElementById('calib-step1');
   const calibStep2    = document.getElementById('calib-step2');
@@ -969,7 +1000,7 @@
           if (dA != null && dB != null) {
             const d3 = calc3DDistance(ptA, dA, ptB, dB);
             if (d3 != null) {
-              label += '  /  ~' + d3.toFixed(2) + ' m (3D)';
+              label += '  /  ~' + metersToDisplay(d3) + ' (3D)';
             }
           }
         }
@@ -1092,56 +1123,63 @@
 
   // ── Results ────────────────────────────────────────────────────────────────
   function updateResults() {
-    // Standard rows
     if (!ptA || !ptB) {
       resPx.textContent    = '—';
       resReal.textContent  = '—';
       resAngle.textContent = '—';
       resA.textContent     = '—';
       resB.textContent     = '—';
-    } else {
-      const px = pixelDist();
-      resPx.textContent = Math.round(px) + ' px';
-
-      const rd = realDistance(px);
-      resReal.textContent = rd ? `${rd.value} ${rd.unit}` : 'Not calibrated';
-
-      const angle = Math.atan2(ptB.y - ptA.y, ptB.x - ptA.x) * 180 / Math.PI;
-      resAngle.textContent = angle.toFixed(1) + '°';
-
-      resA.textContent = `(${Math.round(ptA.x)}, ${Math.round(ptA.y)})`;
-      resB.textContent = `(${Math.round(ptB.x)}, ${Math.round(ptB.y)})`;
-    }
-
-    // Depth rows
-    if (depthAnalysis) {
-      depthDivider.style.display = '';
-      resDepthARow.style.display = '';
-      resDepthBRow.style.display = '';
-      res3dRow.style.display     = '';
-
-      if (ptA && ptB) {
-        const dA = estimatePointDepth(ptA);
-        const dB = estimatePointDepth(ptB);
-        resDepthA.textContent = dA != null ? `~${dA.toFixed(2)} m` : '—';
-        resDepthB.textContent = dB != null ? `~${dB.toFixed(2)} m` : '—';
-
-        if (dA != null && dB != null) {
-          const d3 = calc3DDistance(ptA, dA, ptB, dB);
-          res3d.textContent = d3 != null ? `~${d3.toFixed(3)} m` : '—';
-        } else {
-          res3d.textContent = '—';
-        }
-      } else {
-        resDepthA.textContent = '—';
-        resDepthB.textContent = '—';
-        res3d.textContent     = '—';
-      }
-    } else {
       depthDivider.style.display = 'none';
       resDepthARow.style.display = 'none';
       resDepthBRow.style.display = 'none';
-      res3dRow.style.display     = 'none';
+      return;
+    }
+
+    const px = pixelDist();
+    resPx.textContent = Math.round(px) + ' px';
+
+    const angle = Math.atan2(ptB.y - ptA.y, ptB.x - ptA.x) * 180 / Math.PI;
+    resAngle.textContent = angle.toFixed(1) + '°';
+    resA.textContent = `(${Math.round(ptA.x)}, ${Math.round(ptA.y)})`;
+    resB.textContent = `(${Math.round(ptB.x)}, ${Math.round(ptB.y)})`;
+
+    // When AI depth is available, use the 3D distance as the primary result
+    if (depthAnalysis) {
+      const dA = estimatePointDepth(ptA);
+      const dB = estimatePointDepth(ptB);
+      const d3 = (dA != null && dB != null) ? calc3DDistance(ptA, dA, ptB, dB) : null;
+
+      if (d3 != null) {
+        resRealLabel.textContent = '3D dist (AI)';
+        resReal.className = 'result-value';
+        resReal.style.color = 'var(--success)';
+        resReal.textContent = '~' + metersToDisplay(d3);
+        depthUnitToggle.classList.remove('hidden');
+      } else {
+        // AI loaded but no depth estimate yet
+        const rd = realDistance(px);
+        resRealLabel.textContent = 'Real distance';
+        resReal.className = 'result-value blue';
+        resReal.style.color = '';
+        resReal.textContent = rd ? `${rd.value} ${rd.unit}` : 'Not calibrated';
+        depthUnitToggle.classList.add('hidden');
+      }
+
+      depthDivider.style.display = '';
+      resDepthARow.style.display = '';
+      resDepthBRow.style.display = '';
+      resDepthA.textContent = dA != null ? '~' + metersToDisplay(dA) : '—';
+      resDepthB.textContent = dB != null ? '~' + metersToDisplay(dB) : '—';
+    } else {
+      const rd = realDistance(px);
+      resRealLabel.textContent = 'Real distance';
+      resReal.className = 'result-value blue';
+      resReal.style.color = '';
+      resReal.textContent = rd ? `${rd.value} ${rd.unit}` : 'Not calibrated';
+      depthUnitToggle.classList.add('hidden');
+      depthDivider.style.display = 'none';
+      resDepthARow.style.display = 'none';
+      resDepthBRow.style.display = 'none';
     }
   }
 
@@ -1323,6 +1361,22 @@
     resultsPanel.classList.toggle('hidden');
   });
 
+  unitBtnFt.addEventListener('click', () => {
+    depthUnit = 'ft';
+    unitBtnFt.classList.add('active');
+    unitBtnIn.classList.remove('active');
+    updateResults();
+    draw();
+  });
+
+  unitBtnIn.addEventListener('click', () => {
+    depthUnit = 'in';
+    unitBtnIn.classList.add('active');
+    unitBtnFt.classList.remove('active');
+    updateResults();
+    draw();
+  });
+
   btnResetZoom.addEventListener('click', () => { fitImage(); draw(); });
 
   btnClear.addEventListener('click', () => {
@@ -1387,11 +1441,11 @@
     if (depthAnalysis) {
       const dA = estimatePointDepth(ptA);
       const dB = estimatePointDepth(ptB);
-      if (dA != null) text += `\nDepth A: ~${dA.toFixed(2)} m`;
-      if (dB != null) text += `\nDepth B: ~${dB.toFixed(2)} m`;
+      if (dA != null) text += `\nDepth A: ~${metersToDisplay(dA)}`;
+      if (dB != null) text += `\nDepth B: ~${metersToDisplay(dB)}`;
       if (dA != null && dB != null) {
         const d3 = calc3DDistance(ptA, dA, ptB, dB);
-        if (d3 != null) text += `\n3D distance: ~${d3.toFixed(3)} m`;
+        if (d3 != null) text += `\n3D distance (AI): ~${metersToDisplay(d3)}`;
       }
     }
 
