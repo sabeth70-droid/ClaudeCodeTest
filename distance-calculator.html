@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Distance Calculator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --surface2:  #1f2937;
+      --border:    #30363d;
+      --accent:    #e94560;
+      --accent2:   #58a6ff;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --success:   #3fb950;
+      --warn:      #d29922;
+      --radius:    10px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      overflow: hidden;
+    }
+
+    /* ── Toolbar ── */
+    #toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 12px;
+      height: 52px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      z-index: 10;
+      flex-shrink: 0;
+    }
+
+    .tb-title {
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: .5px;
+      color: var(--text);
+      margin-right: 8px;
+      white-space: nowrap;
+    }
+
+    .tb-sep {
+      width: 1px;
+      height: 28px;
+      background: var(--border);
+      margin: 0 4px;
+    }
+
+    .tb-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .tb-btn:hover { background: #2d333b; border-color: var(--muted); }
+    .tb-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .tb-btn.active-blue { background: var(--accent2); border-color: var(--accent2); color: #0d1117; }
+    .tb-btn svg { flex-shrink: 0; }
+
+    .tb-spacer { flex: 1; }
+
+    #zoom-label {
+      color: var(--muted);
+      font-size: 12px;
+      min-width: 42px;
+      text-align: right;
+    }
+
+    /* ── Layout ── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    #canvas-area {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Drop overlay ── */
+    #drop-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: var(--bg);
+      z-index: 5;
+      transition: opacity .2s;
+    }
+    #drop-overlay.drag-over { background: #161b22; }
+    #drop-overlay.hidden { display: none; }
+
+    .drop-icon { color: var(--muted); }
+    .drop-title { font-size: 1.4rem; font-weight: 600; color: var(--text); }
+    .drop-sub { color: var(--muted); }
+    .drop-border {
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 48px 64px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      transition: border-color .2s;
+    }
+    #drop-overlay.drag-over .drop-border { border-color: var(--accent2); }
+
+    .browse-btn {
+      margin-top: 4px;
+      padding: 9px 24px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .browse-btn:hover { background: #c73652; }
+
+    /* ── Floating panels ── */
+    .panel {
+      position: absolute;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 260px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+      z-index: 20;
+      overflow: hidden;
+      transition: opacity .2s, transform .2s;
+    }
+    .panel.hidden { opacity: 0; pointer-events: none; transform: translateY(8px); }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      cursor: default;
+      user-select: none;
+    }
+    .panel-header span { font-weight: 600; font-size: 13px; }
+
+    .panel-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px;
+      border-radius: 4px;
+      transition: color .15s, background .15s;
+    }
+    .panel-close:hover { color: var(--text); background: var(--border); }
+
+    .panel-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* Results panel */
+    #results-panel { bottom: 20px; right: 20px; }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .result-label { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .result-value { font-size: 15px; font-weight: 600; color: var(--text); text-align: right; word-break: break-all; }
+    .result-value.accent { color: var(--accent); }
+    .result-value.blue { color: var(--accent2); }
+
+    .copy-btn {
+      width: 100%;
+      padding: 7px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+      text-align: center;
+    }
+    .copy-btn:hover { color: var(--text); border-color: var(--muted); }
+
+    /* Calibration panel */
+    #calib-panel { top: 20px; right: 20px; }
+
+    .calib-step {
+      background: var(--surface2);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .calib-step strong { color: var(--text); }
+    .calib-step.done { color: var(--success); }
+
+    .calib-input-row {
+      display: flex;
+      gap: 6px;
+    }
+    .calib-input-row input {
+      flex: 1;
+      min-width: 0;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 6px 8px;
+      font-size: 13px;
+      outline: none;
+    }
+    .calib-input-row input:focus { border-color: var(--accent2); }
+    .calib-input-row select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 6px 6px;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+    .calib-input-row select:focus { border-color: var(--accent2); }
+
+    .calib-apply-btn {
+      width: 100%;
+      padding: 8px;
+      background: var(--accent2);
+      color: #0d1117;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .calib-apply-btn:hover { opacity: .85; }
+    .calib-apply-btn:disabled { opacity: .35; cursor: default; }
+
+    .calib-clear-btn {
+      width: 100%;
+      padding: 7px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+    }
+    .calib-clear-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+    /* Tooltip */
+    [data-tip] { position: relative; }
+    [data-tip]::after {
+      content: attr(data-tip);
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2d333b;
+      color: var(--text);
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .15s;
+      border: 1px solid var(--border);
+      z-index: 100;
+    }
+    [data-tip]:hover::after { opacity: 1; }
+
+    /* Cursor styles */
+    #canvas.cursor-crosshair { cursor: crosshair; }
+    #canvas.cursor-grab      { cursor: grab; }
+    #canvas.cursor-grabbing  { cursor: grabbing; }
+
+    /* Hidden file input */
+    #file-input { display: none; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <span class="tb-title">Distance Calculator</span>
+    <div class="tb-sep"></div>
+
+    <button class="tb-btn" id="btn-upload" data-tip="Upload image">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Upload
+    </button>
+
+    <div class="tb-sep"></div>
+
+    <button class="tb-btn active" id="btn-measure" data-tip="Click to place measurement points">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="12" x2="5" y2="9"/><line x1="2" y1="12" x2="5" y2="15"/><line x1="22" y1="12" x2="19" y2="9"/><line x1="22" y1="12" x2="19" y2="15"/></svg>
+      Measure
+    </button>
+
+    <button class="tb-btn" id="btn-pan" data-tip="Click and drag to pan">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v1a2 2 0 0 0-2-2 2 2 0 0 0-2 2v1a2 2 0 0 0-2-2 2 2 0 0 0-2 2v4l-.5-1.5A2 2 0 0 0 3.6 8c-.9.4-1.3 1.5-.9 2.4l3 7A5 5 0 0 0 10.3 20H15a5 5 0 0 0 5-5v-4a2 2 0 0 0-2-2 2 2 0 0 0-2 2z"/></svg>
+      Pan
+    </button>
+
+    <div class="tb-sep"></div>
+
+    <button class="tb-btn" id="btn-calib" data-tip="Set real-world scale">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M14 14h7v7h-7z"/><path d="M3 14h7v7H3z"/></svg>
+      Calibrate
+    </button>
+
+    <button class="tb-btn" id="btn-results" data-tip="Toggle results panel">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="15" x2="12" y2="15"/></svg>
+      Results
+    </button>
+
+    <div class="tb-sep"></div>
+
+    <button class="tb-btn" id="btn-reset-zoom" data-tip="Fit image to window">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h6M3 3v6M21 3h-6M21 3v6M3 21h6M3 21v-6M21 21h-6M21 21v-6"/></svg>
+      Fit
+    </button>
+
+    <button class="tb-btn" id="btn-clear" data-tip="Clear measurement points">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      Clear
+    </button>
+
+    <div class="tb-spacer"></div>
+    <span id="zoom-label">—</span>
+  </div>
+
+  <!-- Canvas area -->
+  <div id="canvas-area">
+
+    <!-- Drop overlay -->
+    <div id="drop-overlay">
+      <div class="drop-border">
+        <svg class="drop-icon" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span class="drop-title">Drop an image here</span>
+        <span class="drop-sub">or click to browse from your computer</span>
+        <button class="browse-btn" id="browse-btn">Browse Files</button>
+      </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <!-- Results panel -->
+    <div class="panel hidden" id="results-panel">
+      <div class="panel-header">
+        <span>Results</span>
+        <button class="panel-close" id="results-close">&#x2715;</button>
+      </div>
+      <div class="panel-body">
+        <div class="result-row">
+          <span class="result-label">Pixel distance</span>
+          <span class="result-value accent" id="res-px">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Real distance</span>
+          <span class="result-value blue" id="res-real">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Angle</span>
+          <span class="result-value" id="res-angle">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Point A</span>
+          <span class="result-value" id="res-a" style="font-size:12px;color:var(--muted)">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Point B</span>
+          <span class="result-value" id="res-b" style="font-size:12px;color:var(--muted)">—</span>
+        </div>
+        <button class="copy-btn" id="copy-btn">Copy to clipboard</button>
+      </div>
+    </div>
+
+    <!-- Calibration panel -->
+    <div class="panel hidden" id="calib-panel">
+      <div class="panel-header">
+        <span>Scale Calibration</span>
+        <button class="panel-close" id="calib-close">&#x2715;</button>
+      </div>
+      <div class="panel-body">
+        <div class="calib-step" id="calib-step1">
+          <strong>Step 1</strong> — Click two points on an object whose real size you know.
+        </div>
+        <div class="calib-step" id="calib-step2" style="display:none">
+          <strong>Step 2</strong> — Enter the real-world length of that object.
+        </div>
+        <div class="calib-input-row" id="calib-input-row" style="display:none">
+          <input type="number" id="calib-value" placeholder="e.g. 30" min="0" step="any">
+          <select id="calib-unit">
+            <option>mm</option>
+            <option>cm</option>
+            <option selected>m</option>
+            <option>in</option>
+            <option>ft</option>
+            <option>yd</option>
+          </select>
+        </div>
+        <button class="calib-apply-btn" id="calib-apply" disabled>Apply Calibration</button>
+        <div class="calib-step" id="calib-status" style="display:none"></div>
+        <button class="calib-clear-btn" id="calib-clear">Clear Calibration</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<input type="file" id="file-input" accept="image/*">
+
+<script>
+(() => {
+  // ── State ──────────────────────────────────────────────────────────────────
+  let img = null;
+  let pan = { x: 0, y: 0 };
+  let scale = 1;
+
+  // Measurement points in image-space
+  let ptA = null, ptB = null;
+
+  // Calibration state
+  let calib = {
+    active: false,   // currently placing calib points
+    p1: null, p2: null,
+    pixelDist: null,
+    realDist: null,   // px per unit, once set
+    unit: 'm',
+  };
+
+  let mode = 'measure'; // 'measure' | 'pan' | 'calib'
+  let panning = false;
+  let panStart = { x: 0, y: 0 };
+
+  // ── Elements ───────────────────────────────────────────────────────────────
+  const canvas      = document.getElementById('canvas');
+  const ctx         = canvas.getContext('2d');
+  const dropOverlay = document.getElementById('drop-overlay');
+  const fileInput   = document.getElementById('file-input');
+  const zoomLabel   = document.getElementById('zoom-label');
+
+  const btnUpload   = document.getElementById('btn-upload');
+  const btnMeasure  = document.getElementById('btn-measure');
+  const btnPan      = document.getElementById('btn-pan');
+  const btnCalib    = document.getElementById('btn-calib');
+  const btnResults  = document.getElementById('btn-results');
+  const btnResetZoom= document.getElementById('btn-reset-zoom');
+  const btnClear    = document.getElementById('btn-clear');
+
+  const resultsPanel = document.getElementById('results-panel');
+  const calibPanel   = document.getElementById('calib-panel');
+
+  const resPx    = document.getElementById('res-px');
+  const resReal  = document.getElementById('res-real');
+  const resAngle = document.getElementById('res-angle');
+  const resA     = document.getElementById('res-a');
+  const resB     = document.getElementById('res-b');
+  const copyBtn  = document.getElementById('copy-btn');
+
+  const calibStep1  = document.getElementById('calib-step1');
+  const calibStep2  = document.getElementById('calib-step2');
+  const calibInputRow = document.getElementById('calib-input-row');
+  const calibValue  = document.getElementById('calib-value');
+  const calibUnit   = document.getElementById('calib-unit');
+  const calibApply  = document.getElementById('calib-apply');
+  const calibStatus = document.getElementById('calib-status');
+  const calibClear  = document.getElementById('calib-clear');
+
+  // ── Canvas resize ──────────────────────────────────────────────────────────
+  function resizeCanvas() {
+    const area = document.getElementById('canvas-area');
+    canvas.width  = area.clientWidth;
+    canvas.height = area.clientHeight;
+    draw();
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  // ── Coordinate conversion ──────────────────────────────────────────────────
+  function screenToImage(sx, sy) {
+    return { x: (sx - pan.x) / scale, y: (sy - pan.y) / scale };
+  }
+  function imageToScreen(ix, iy) {
+    return { x: ix * scale + pan.x, y: iy * scale + pan.y };
+  }
+
+  // ── Fit image ──────────────────────────────────────────────────────────────
+  function fitImage() {
+    if (!img) return;
+    const pad = 24;
+    const sw = canvas.width  - pad * 2;
+    const sh = canvas.height - pad * 2;
+    scale = Math.min(sw / img.width, sh / img.height);
+    pan.x = (canvas.width  - img.width  * scale) / 2;
+    pan.y = (canvas.height - img.height * scale) / 2;
+    updateZoomLabel();
+  }
+
+  function updateZoomLabel() {
+    zoomLabel.textContent = Math.round(scale * 100) + '%';
+  }
+
+  // ── Load image ─────────────────────────────────────────────────────────────
+  function loadImage(src) {
+    const image = new Image();
+    image.onload = () => {
+      img = image;
+      ptA = null; ptB = null;
+      resetCalib();
+      dropOverlay.classList.add('hidden');
+      fitImage();
+      updateResults();
+      draw();
+      // Show results panel automatically
+      resultsPanel.classList.remove('hidden');
+    };
+    image.src = src;
+  }
+
+  function handleFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const url = URL.createObjectURL(file);
+    loadImage(url);
+  }
+
+  // ── Draw ───────────────────────────────────────────────────────────────────
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!img) return;
+
+    ctx.save();
+    ctx.translate(pan.x, pan.y);
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0);
+    ctx.restore();
+
+    // Calibration line
+    if (calib.p1) {
+      const s1 = imageToScreen(calib.p1.x, calib.p1.y);
+      if (calib.p2) {
+        const s2 = imageToScreen(calib.p2.x, calib.p2.y);
+        ctx.save();
+        ctx.strokeStyle = '#d29922';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(s1.x, s1.y);
+        ctx.lineTo(s2.x, s2.y);
+        ctx.stroke();
+        ctx.restore();
+        drawPoint(s2.x, s2.y, '#d29922', 'Ref B');
+      }
+      drawPoint(s1.x, s1.y, '#d29922', 'Ref A');
+    }
+
+    // Measurement line
+    if (ptA) {
+      const sa = imageToScreen(ptA.x, ptA.y);
+      if (ptB) {
+        const sb = imageToScreen(ptB.x, ptB.y);
+        // Line
+        ctx.save();
+        ctx.strokeStyle = '#e94560';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(sa.x, sa.y);
+        ctx.lineTo(sb.x, sb.y);
+        ctx.stroke();
+
+        // Distance label at midpoint
+        const mx = (sa.x + sb.x) / 2;
+        const my = (sa.y + sb.y) / 2;
+        const px = pixelDist();
+        let label = Math.round(px) + ' px';
+        if (calib.realDist) {
+          const rd = realDistance(px);
+          label += '  /  ' + rd.value + ' ' + rd.unit;
+        }
+        drawLabel(mx, my - 14, label);
+        ctx.restore();
+        drawPoint(sb.x, sb.y, '#e94560', 'B');
+      }
+      drawPoint(sa.x, sa.y, '#e94560', 'A');
+    }
+
+    // Crosshair cursor indicator for calib mode
+    if (mode === 'calib') {
+      // subtle tint to hint calibration mode
+      ctx.save();
+      ctx.fillStyle = 'rgba(210,153,34,0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    }
+  }
+
+  function drawPoint(sx, sy, color, label) {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Label
+    ctx.font = 'bold 12px Segoe UI, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(label, sx, sy);
+    ctx.restore();
+  }
+
+  function drawLabel(sx, sy, text) {
+    ctx.save();
+    ctx.font = '12px Segoe UI, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    const w = ctx.measureText(text).width + 12;
+    ctx.fillStyle = 'rgba(13,17,23,0.8)';
+    ctx.beginPath();
+    ctx.roundRect(sx - w/2, sy - 18, w, 20, 4);
+    ctx.fill();
+    ctx.fillStyle = '#e6edf3';
+    ctx.fillText(text, sx, sy);
+    ctx.restore();
+  }
+
+  // ── Distance helpers ───────────────────────────────────────────────────────
+  function pixelDist() {
+    if (!ptA || !ptB) return 0;
+    return Math.sqrt((ptB.x - ptA.x) ** 2 + (ptB.y - ptA.y) ** 2);
+  }
+
+  function realDistance(px) {
+    if (!calib.realDist) return null;
+    const val = px / calib.pixelsPerUnit;
+    return { value: +val.toFixed(4), unit: calib.unit };
+  }
+
+  // ── Results ────────────────────────────────────────────────────────────────
+  function updateResults() {
+    if (!ptA || !ptB) {
+      resPx.textContent    = '—';
+      resReal.textContent  = '—';
+      resAngle.textContent = '—';
+      resA.textContent     = '—';
+      resB.textContent     = '—';
+      return;
+    }
+    const px = pixelDist();
+    resPx.textContent = Math.round(px) + ' px';
+
+    const rd = realDistance(px);
+    resReal.textContent = rd ? `${rd.value} ${rd.unit}` : 'Not calibrated';
+
+    const angle = Math.atan2(ptB.y - ptA.y, ptB.x - ptA.x) * 180 / Math.PI;
+    resAngle.textContent = angle.toFixed(1) + '°';
+
+    resA.textContent = `(${Math.round(ptA.x)}, ${Math.round(ptA.y)})`;
+    resB.textContent = `(${Math.round(ptB.x)}, ${Math.round(ptB.y)})`;
+  }
+
+  // ── Calibration ────────────────────────────────────────────────────────────
+  function resetCalib() {
+    calib = { active: false, p1: null, p2: null, pixelDist: null, realDist: null, pixelsPerUnit: null, unit: 'm' };
+    calibStep1.classList.remove('done');
+    calibStep2.style.display = 'none';
+    calibInputRow.style.display = 'none';
+    calibApply.disabled = true;
+    calibStatus.style.display = 'none';
+    calibStep1.innerHTML = '<strong>Step 1</strong> — Click two points on an object whose real size you know.';
+    calibStep1.style.display = '';
+  }
+
+  function updateCalibUI() {
+    if (!calib.p1) {
+      calibStep1.innerHTML = '<strong>Step 1</strong> — Click two points on an object whose real size you know.';
+      calibStep1.classList.remove('done');
+      calibStep2.style.display = 'none';
+      calibInputRow.style.display = 'none';
+      calibApply.disabled = true;
+    } else if (!calib.p2) {
+      calibStep1.innerHTML = '<strong>Step 1</strong> — Ref A placed. Now click Ref B.';
+      calibStep1.classList.remove('done');
+      calibStep2.style.display = 'none';
+      calibInputRow.style.display = 'none';
+    } else {
+      const d = Math.sqrt((calib.p2.x - calib.p1.x) ** 2 + (calib.p2.y - calib.p1.y) ** 2);
+      calib.pixelDist = d;
+      calibStep1.innerHTML = `<strong>Step 1 ✓</strong> — Reference: ${Math.round(d)} px`;
+      calibStep1.classList.add('done');
+      calibStep2.style.display = '';
+      calibInputRow.style.display = '';
+      calibApply.disabled = !calibValue.value;
+    }
+  }
+
+  calibValue.addEventListener('input', () => {
+    calibApply.disabled = !calibValue.value || !calib.p2;
+  });
+
+  calibApply.addEventListener('click', () => {
+    const val = parseFloat(calibValue.value);
+    if (!val || !calib.pixelDist) return;
+    calib.unit = calibUnit.value;
+    calib.pixelsPerUnit = calib.pixelDist / val;
+    calib.realDist = val;
+    calibStatus.style.display = '';
+    calibStatus.className = 'calib-step done';
+    calibStatus.innerHTML = `<strong>Calibrated ✓</strong> — 1 ${calib.unit} = ${Math.round(calib.pixelsPerUnit)} px`;
+    updateResults();
+    draw();
+  });
+
+  calibClear.addEventListener('click', () => {
+    resetCalib();
+    calibUnit.value = 'm';
+    calibValue.value = '';
+    updateResults();
+    draw();
+  });
+
+  // ── Canvas input ───────────────────────────────────────────────────────────
+  function canvasClick(e) {
+    if (!img) return;
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    const ip = screenToImage(sx, sy);
+
+    if (mode === 'calib') {
+      if (!calib.p1) {
+        calib.p1 = ip;
+      } else if (!calib.p2) {
+        calib.p2 = ip;
+      } else {
+        // reset calib points, start over
+        calib.p1 = ip;
+        calib.p2 = null;
+        calib.pixelDist = null;
+        calib.realDist = null;
+        calib.pixelsPerUnit = null;
+        calibStep1.classList.remove('done');
+        calibStatus.style.display = 'none';
+        calibValue.value = '';
+        calibApply.disabled = true;
+      }
+      updateCalibUI();
+      draw();
+      return;
+    }
+
+    if (mode === 'measure') {
+      if (!ptA || (ptA && ptB)) {
+        ptA = ip;
+        ptB = null;
+      } else {
+        ptB = ip;
+      }
+      updateResults();
+      draw();
+    }
+  }
+
+  canvas.addEventListener('click', (e) => {
+    if (panning) return; // don't register click if we panned
+    canvasClick(e);
+  });
+
+  // Pan
+  let panMoved = false;
+  canvas.addEventListener('mousedown', (e) => {
+    if (mode !== 'pan') return;
+    panning = true;
+    panMoved = false;
+    panStart.x = e.clientX - pan.x;
+    panStart.y = e.clientY - pan.y;
+    canvas.classList.replace('cursor-grab', 'cursor-grabbing');
+  });
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (!panning) return;
+    pan.x = e.clientX - panStart.x;
+    pan.y = e.clientY - panStart.y;
+    panMoved = true;
+    draw();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (panning) {
+      panning = false;
+      if (mode === 'pan') canvas.classList.replace('cursor-grabbing', 'cursor-grab');
+    }
+  });
+
+  // Zoom
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (!img) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const delta = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+    const newScale = Math.min(Math.max(scale * delta, 0.05), 50);
+    pan.x = mx - (mx - pan.x) * (newScale / scale);
+    pan.y = my - (my - pan.y) * (newScale / scale);
+    scale = newScale;
+    updateZoomLabel();
+    draw();
+  }, { passive: false });
+
+  // ── Toolbar actions ────────────────────────────────────────────────────────
+  function setMode(m) {
+    mode = m;
+    btnMeasure.classList.toggle('active', m === 'measure');
+    btnPan.classList.toggle('active', m === 'pan');
+    btnCalib.classList.toggle('active-blue', m === 'calib');
+
+    canvas.className = '';
+    if (m === 'pan') canvas.classList.add('cursor-grab');
+    else canvas.classList.add('cursor-crosshair');
+  }
+
+  btnMeasure.addEventListener('click', () => setMode('measure'));
+  btnPan.addEventListener('click', () => setMode('pan'));
+
+  btnCalib.addEventListener('click', () => {
+    const open = !calibPanel.classList.contains('hidden');
+    if (open) {
+      calibPanel.classList.add('hidden');
+      setMode('measure');
+    } else {
+      calibPanel.classList.remove('hidden');
+      setMode('calib');
+    }
+  });
+
+  btnResults.addEventListener('click', () => {
+    resultsPanel.classList.toggle('hidden');
+  });
+
+  btnResetZoom.addEventListener('click', () => { fitImage(); draw(); });
+
+  btnClear.addEventListener('click', () => {
+    ptA = null; ptB = null;
+    updateResults();
+    draw();
+  });
+
+  btnUpload.addEventListener('click', () => fileInput.click());
+  document.getElementById('browse-btn').addEventListener('click', () => fileInput.click());
+
+  document.getElementById('results-close').addEventListener('click', () => {
+    resultsPanel.classList.add('hidden');
+  });
+  document.getElementById('calib-close').addEventListener('click', () => {
+    calibPanel.classList.add('hidden');
+    setMode('measure');
+  });
+
+  // ── File input ─────────────────────────────────────────────────────────────
+  fileInput.addEventListener('change', (e) => {
+    handleFile(e.target.files[0]);
+    fileInput.value = '';
+  });
+
+  // ── Drag & drop ────────────────────────────────────────────────────────────
+  const dropArea = document.getElementById('canvas-area');
+  dropArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropOverlay.classList.add('drag-over');
+  });
+  dropArea.addEventListener('dragleave', () => dropOverlay.classList.remove('drag-over'));
+  dropArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropOverlay.classList.remove('drag-over');
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  // Also allow drop on whole page
+  document.addEventListener('dragover', (e) => e.preventDefault());
+  document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+
+  // ── Copy ───────────────────────────────────────────────────────────────────
+  copyBtn.addEventListener('click', () => {
+    if (!ptA || !ptB) return;
+    const px = pixelDist();
+    const rd = realDistance(px);
+    let text = `Distance Calculator Results\n`;
+    text += `Pixel distance: ${Math.round(px)} px\n`;
+    if (rd) text += `Real distance: ${rd.value} ${rd.unit}\n`;
+    const angle = Math.atan2(ptB.y - ptA.y, ptB.x - ptA.x) * 180 / Math.PI;
+    text += `Angle: ${angle.toFixed(1)}°\n`;
+    text += `Point A: (${Math.round(ptA.x)}, ${Math.round(ptA.y)})\n`;
+    text += `Point B: (${Math.round(ptB.x)}, ${Math.round(ptB.y)})`;
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => copyBtn.textContent = orig, 1500);
+    });
+  });
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  setMode('measure');
+})();
+</script>
+</body>
+</html>
