@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InkWell — Fiction Expansion Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --parchment:  #F5ECD7;
+    --parchment2: #EDE0C4;
+    --parchment3: #E4D4B0;
+    --ink:        #3B2A1A;
+    --ink-light:  #6B4C30;
+    --gold:       #B8922A;
+    --gold-light: #D4AA4A;
+    --burgundy:   #7A2535;
+    --shadow:     rgba(59,42,26,0.18);
+    --shadow-sm:  rgba(59,42,26,0.10);
+  }
+
+  html, body {
+    min-height: 100%;
+    background: var(--parchment);
+    color: var(--ink);
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+    line-height: 1.6;
+  }
+
+  body {
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(184,146,42,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 90%, rgba(122,37,53,0.05) 0%, transparent 50%);
+    padding-bottom: 60px;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    padding: 40px 20px 24px;
+    border-bottom: 1px solid var(--parchment3);
+    position: relative;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.8rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+  header h1 span { color: var(--gold); }
+  header p {
+    margin-top: 6px;
+    color: var(--ink-light);
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .key-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: 1px solid var(--parchment3);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.8rem;
+    color: var(--ink-light);
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .key-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ── Main layout ── */
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 32px 20px 0;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: linear-gradient(145deg, #FAF3E3, var(--parchment2));
+    border: 1px solid var(--parchment3);
+    border-radius: 12px;
+    box-shadow: 0 4px 18px var(--shadow-sm), 0 1px 4px var(--shadow);
+    padding: 28px 32px;
+    margin-bottom: 24px;
+  }
+
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--parchment3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .ornament { color: var(--gold); font-style: italic; }
+
+  /* ── Seed input ── */
+  #seed {
+    width: 100%;
+    min-height: 110px;
+    background: rgba(255,255,255,0.45);
+    border: 1px solid var(--parchment3);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: 'Lato', sans-serif;
+    font-size: 1rem;
+    color: var(--ink);
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    line-height: 1.6;
+  }
+  #seed::placeholder { color: var(--ink-light); opacity: 0.6; font-style: italic; }
+  #seed:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(184,146,42,0.12); }
+
+  /* ── Context fields ── */
+  .context-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 16px 0 0;
+    cursor: pointer;
+    user-select: none;
+    color: var(--ink-light);
+    font-size: 0.875rem;
+    letter-spacing: 0.04em;
+    width: fit-content;
+  }
+  .context-toggle:hover { color: var(--gold); }
+  .toggle-arrow {
+    display: inline-block;
+    transition: transform 0.25s;
+    font-size: 0.7rem;
+  }
+  .context-toggle.open .toggle-arrow { transform: rotate(90deg); }
+
+  .context-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 20px;
+    margin-top: 16px;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.3s ease, margin-top 0.3s;
+  }
+  .context-grid.open {
+    max-height: 600px;
+    opacity: 1;
+  }
+
+  .field-group { display: flex; flex-direction: column; gap: 5px; }
+  .field-group.full { grid-column: 1 / -1; }
+  .field-group label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+  }
+  .field-group select,
+  .field-group input[type="text"] {
+    background: rgba(255,255,255,0.5);
+    border: 1px solid var(--parchment3);
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.9rem;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field-group select:focus,
+  .field-group input[type="text"]:focus { border-color: var(--gold); }
+  .field-group select option { background: #F5ECD7; }
+
+  .para-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .para-row button {
+    width: 34px; height: 34px;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid var(--parchment3);
+    color: var(--ink);
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .para-row button:first-child { border-radius: 6px 0 0 6px; }
+  .para-row button:last-child  { border-radius: 0 6px 6px 0; }
+  .para-row button:hover { background: var(--parchment3); }
+  .para-count {
+    width: 40px; height: 34px;
+    background: rgba(255,255,255,0.6);
+    border-top: 1px solid var(--parchment3);
+    border-bottom: 1px solid var(--parchment3);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ink);
+    user-select: none;
+  }
+
+  /* ── Generate button ── */
+  .generate-wrap {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 22px;
+  }
+  #btn-generate {
+    background: linear-gradient(135deg, var(--gold), #9A7520);
+    color: #FFF8EC;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 36px;
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(184,146,42,0.35);
+    transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #btn-generate:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 18px rgba(184,146,42,0.45);
+  }
+  #btn-generate:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ── Quill pulse ── */
+  .quill-icon {
+    display: inline-block;
+    font-size: 1.1rem;
+    transition: opacity 0.2s;
+  }
+  #btn-generate:disabled .quill-icon {
+    animation: quill-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes quill-pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+
+  /* ── Output card ── */
+  #output-card { display: none; }
+  #output-card.visible { display: block; }
+
+  #output-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.08rem;
+    line-height: 1.85;
+    color: var(--ink);
+    white-space: pre-wrap;
+    min-height: 60px;
+  }
+  #output-text .cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    background: var(--gold);
+    vertical-align: text-bottom;
+    margin-left: 1px;
+    animation: blink 0.9s step-start infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ── Post-gen actions ── */
+  .output-actions {
+    display: none;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--parchment3);
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .output-actions.visible { display: flex; }
+
+  .action-btn {
+    background: rgba(255,255,255,0.55);
+    border: 1px solid var(--parchment3);
+    border-radius: 7px;
+    padding: 9px 20px;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.87rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--ink-light);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .action-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(255,255,255,0.8); }
+  .action-btn.save-btn { color: var(--burgundy); border-color: rgba(122,37,53,0.3); }
+  .action-btn.save-btn:hover { border-color: var(--burgundy); background: rgba(122,37,53,0.06); }
+
+  /* ── Saved list ── */
+  #saved-section { display: none; }
+  #saved-section.visible { display: block; }
+
+  .saved-header {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .saved-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--parchment3);
+  }
+
+  .saved-list { display: flex; flex-direction: column; gap: 16px; }
+
+  .saved-entry {
+    background: linear-gradient(145deg, #FAF3E3, var(--parchment2));
+    border: 1px solid var(--parchment3);
+    border-radius: 10px;
+    padding: 20px 24px;
+    box-shadow: 0 2px 10px var(--shadow-sm);
+    position: relative;
+  }
+  .saved-entry-meta {
+    font-size: 0.78rem;
+    color: var(--ink-light);
+    margin-bottom: 10px;
+    letter-spacing: 0.04em;
+  }
+  .saved-entry-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.97rem;
+    line-height: 1.75;
+    color: var(--ink);
+    white-space: pre-wrap;
+  }
+  .saved-entry-delete {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ink-light);
+    font-size: 1rem;
+    opacity: 0.45;
+    transition: opacity 0.2s, color 0.2s;
+    line-height: 1;
+  }
+  .saved-entry-delete:hover { opacity: 1; color: var(--burgundy); }
+
+  /* ── API Key Modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(59,42,26,0.45);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--parchment);
+    border: 1px solid var(--parchment3);
+    border-radius: 14px;
+    padding: 32px;
+    width: 90%;
+    max-width: 440px;
+    box-shadow: 0 20px 60px rgba(59,42,26,0.3);
+  }
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+  .modal-sub {
+    font-size: 0.85rem;
+    color: var(--ink-light);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  .modal-sub a { color: var(--gold); text-decoration: none; }
+  .modal-key-input {
+    width: 100%;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid var(--parchment3);
+    border-radius: 7px;
+    padding: 11px 14px;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.9rem;
+    color: var(--ink);
+    outline: none;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .modal-key-input:focus { border-color: var(--gold); }
+  .modal-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .modal-save-btn {
+    background: linear-gradient(135deg, var(--gold), #9A7520);
+    color: #FFF8EC;
+    border: none;
+    border-radius: 7px;
+    padding: 10px 24px;
+    font-family: 'Lato', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .modal-save-btn:hover { opacity: 0.88; }
+  .modal-clear-btn {
+    background: none;
+    border: 1px solid var(--parchment3);
+    border-radius: 7px;
+    padding: 10px 18px;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.9rem;
+    color: var(--ink-light);
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .modal-clear-btn:hover { border-color: var(--burgundy); color: var(--burgundy); }
+  .modal-close-btn {
+    background: none;
+    border: none;
+    margin-left: auto;
+    padding: 10px 6px;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.9rem;
+    color: var(--ink-light);
+    cursor: pointer;
+  }
+  .modal-status {
+    font-size: 0.8rem;
+    margin-top: 10px;
+    color: var(--gold);
+    min-height: 18px;
+  }
+  .modal-status.error { color: var(--burgundy); }
+
+  /* ── Copy feedback ── */
+  .copy-flash {
+    font-size: 0.78rem;
+    color: var(--gold);
+    margin-left: 4px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .copy-flash.show { opacity: 1; }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .card { padding: 20px 18px; }
+    .context-grid { grid-template-columns: 1fr; }
+    header h1 { font-size: 2rem; }
+    .key-btn { top: 14px; right: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Ink<span>Well</span></h1>
+  <p>Fiction Expansion &mdash; Powered by Claude</p>
+  <button class="key-btn" id="open-key-modal">&#x1F5DD; API Key</button>
+</header>
+
+<div class="container">
+
+  <!-- Input card -->
+  <div class="card">
+    <div class="card-title">
+      <span class="ornament">&#10022;</span> Your Seed
+    </div>
+    <textarea id="seed" placeholder="Paste a sentence, a raw idea, or a fragment of a scene — InkWell will expand it into vivid prose…"></textarea>
+
+    <div class="context-toggle" id="ctx-toggle">
+      <span class="toggle-arrow">&#9658;</span> Context &amp; Style
+    </div>
+
+    <div class="context-grid" id="ctx-grid">
+      <div class="field-group">
+        <label>Genre</label>
+        <select id="ctx-genre">
+          <option value="">— None —</option>
+          <option>Fantasy / Sci-Fi</option>
+          <option>Horror / Dark Fiction</option>
+          <option>Literary / Character Drama</option>
+          <option>Thriller / Action</option>
+          <option>Romance</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Point of View</label>
+        <select id="ctx-pov">
+          <option value="">— None —</option>
+          <option>First Person</option>
+          <option>Third Person Limited</option>
+          <option>Third Person Omniscient</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Tense</label>
+        <select id="ctx-tense">
+          <option value="">— None —</option>
+          <option>Past</option>
+          <option>Present</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Tone / Mood</label>
+        <input type="text" id="ctx-tone" placeholder="e.g. tense and foreboding, melancholic…">
+      </div>
+
+      <div class="field-group">
+        <label>Character Name(s)</label>
+        <input type="text" id="ctx-chars" placeholder="e.g. Elara, Marcus, The Warden">
+      </div>
+
+      <div class="field-group">
+        <label>Setting / Location</label>
+        <input type="text" id="ctx-setting" placeholder="e.g. a foggy harbor town">
+      </div>
+
+      <div class="field-group">
+        <label>Time Period</label>
+        <input type="text" id="ctx-period" placeholder="e.g. Victorian England, post-apocalyptic future">
+      </div>
+
+      <div class="field-group">
+        <label>Paragraph Count</label>
+        <div class="para-row">
+          <button id="para-dec">&#8722;</button>
+          <div class="para-count" id="para-display">3</div>
+          <button id="para-inc">&#43;</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="generate-wrap">
+      <button id="btn-generate">
+        <span class="quill-icon">&#10002;</span> Generate
+      </button>
+    </div>
+  </div>
+
+  <!-- Output card -->
+  <div class="card" id="output-card">
+    <div class="card-title">
+      <span class="ornament">&#10022;</span> Expanded Prose
+    </div>
+    <div id="output-text"></div>
+    <div class="output-actions" id="output-actions">
+      <button class="action-btn" id="btn-copy">&#128203; Copy <span class="copy-flash" id="copy-flash">Copied!</span></button>
+      <button class="action-btn" id="btn-regen">&#8635; Regenerate</button>
+      <button class="action-btn save-btn" id="btn-save">&#128278; Save</button>
+    </div>
+  </div>
+
+  <!-- Saved section -->
+  <div id="saved-section">
+    <div class="saved-header">Saved Passages</div>
+    <div class="saved-list" id="saved-list"></div>
+  </div>
+
+</div>
+
+<!-- API Key Modal -->
+<div class="modal-overlay" id="key-modal">
+  <div class="modal-box">
+    <div class="modal-title">Anthropic API Key</div>
+    <div class="modal-sub">
+      Your key is stored only in this browser's localStorage and never sent anywhere except directly to Anthropic's API.
+    </div>
+    <input class="modal-key-input" type="password" id="key-input" placeholder="sk-ant-…">
+    <div class="modal-actions">
+      <button class="modal-save-btn" id="key-save">Save Key</button>
+      <button class="modal-clear-btn" id="key-clear">Clear</button>
+      <button class="modal-close-btn" id="key-close">Cancel</button>
+    </div>
+    <div class="modal-status" id="key-status"></div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let paraCount   = 3;
+let savedItems  = [];
+let isStreaming = false;
+let currentText = '';
+
+// ── API Key ────────────────────────────────────────────────────────────────
+const keyModal  = document.getElementById('key-modal');
+const keyInput  = document.getElementById('key-input');
+const keyStatus = document.getElementById('key-status');
+
+document.getElementById('open-key-modal').addEventListener('click', () => {
+  keyInput.value = '';
+  const existing = localStorage.getItem('inkwell_api_key') || '';
+  keyStatus.className = 'modal-status';
+  keyStatus.textContent = existing
+    ? 'Key saved: ' + existing.slice(0, 10) + '…'
+    : 'No key saved yet.';
+  keyModal.classList.add('open');
+  setTimeout(() => keyInput.focus(), 80);
+});
+
+document.getElementById('key-save').addEventListener('click', () => {
+  const val = keyInput.value.trim();
+  if (!val) { showKeyStatus('Enter a key first.', true); return; }
+  localStorage.setItem('inkwell_api_key', val);
+  keyInput.value = '';
+  showKeyStatus('Key saved successfully.', false);
+  setTimeout(() => keyModal.classList.remove('open'), 1000);
+});
+
+document.getElementById('key-clear').addEventListener('click', () => {
+  localStorage.removeItem('inkwell_api_key');
+  keyInput.value = '';
+  showKeyStatus('Key cleared.', false);
+});
+
+document.getElementById('key-close').addEventListener('click', () => {
+  keyModal.classList.remove('open');
+});
+
+keyModal.addEventListener('click', e => {
+  if (e.target === keyModal) keyModal.classList.remove('open');
+});
+
+function showKeyStatus(msg, isError) {
+  keyStatus.textContent = msg;
+  keyStatus.className = 'modal-status' + (isError ? ' error' : '');
+}
+
+// ── Context toggle ─────────────────────────────────────────────────────────
+const ctxToggle = document.getElementById('ctx-toggle');
+const ctxGrid   = document.getElementById('ctx-grid');
+
+ctxToggle.addEventListener('click', () => {
+  ctxToggle.classList.toggle('open');
+  ctxGrid.classList.toggle('open');
+});
+
+// ── Paragraph count ────────────────────────────────────────────────────────
+const paraDisplay = document.getElementById('para-display');
+document.getElementById('para-dec').addEventListener('click', () => {
+  if (paraCount > 1) { paraCount--; paraDisplay.textContent = paraCount; }
+});
+document.getElementById('para-inc').addEventListener('click', () => {
+  if (paraCount < 5) { paraCount++; paraDisplay.textContent = paraCount; }
+});
+
+// ── Build prompt ──────────────────────────────────────────────────────────
+function buildPrompt() {
+  const seed    = document.getElementById('seed').value.trim();
+  const genre   = document.getElementById('ctx-genre').value;
+  const pov     = document.getElementById('ctx-pov').value;
+  const tense   = document.getElementById('ctx-tense').value;
+  const tone    = document.getElementById('ctx-tone').value.trim();
+  const chars   = document.getElementById('ctx-chars').value.trim();
+  const setting = document.getElementById('ctx-setting').value.trim();
+  const period  = document.getElementById('ctx-period').value.trim();
+
+  const ctx = [];
+  if (genre)   ctx.push(`Genre: ${genre}`);
+  if (pov)     ctx.push(`Point of view: ${pov}`);
+  if (tense)   ctx.push(`Tense: ${tense}`);
+  if (tone)    ctx.push(`Tone/mood: ${tone}`);
+  if (chars)   ctx.push(`Character name(s): ${chars}`);
+  if (setting) ctx.push(`Setting/location: ${setting}`);
+  if (period)  ctx.push(`Time period: ${period}`);
+  ctx.push(`Paragraph count: ${paraCount}`);
+
+  let prompt = `Expand the following seed into exactly ${paraCount} paragraph(s) of vivid, immersive fiction prose.\n`;
+  if (ctx.length) {
+    prompt += `\nContext:\n${ctx.join('\n')}\n`;
+  }
+  prompt += `\nSeed:\n${seed}\n\nWrite only the paragraphs. No preamble, no commentary, no titles. Begin directly with the prose.`;
+  return prompt;
+}
+
+// ── Stream generation ──────────────────────────────────────────────────────
+const outputCard    = document.getElementById('output-card');
+const outputText    = document.getElementById('output-text');
+const outputActions = document.getElementById('output-actions');
+const btnGenerate   = document.getElementById('btn-generate');
+
+async function generate() {
+  const seed = document.getElementById('seed').value.trim();
+  if (!seed) { alert('Please enter a seed sentence or idea.'); return; }
+
+  const apiKey = localStorage.getItem('inkwell_api_key') || '';
+  if (!apiKey) {
+    keyModal.classList.add('open');
+    showKeyStatus('Please save your API key to continue.', true);
+    return;
+  }
+
+  isStreaming = true;
+  currentText = '';
+  btnGenerate.disabled = true;
+  outputCard.classList.add('visible');
+  outputActions.classList.remove('visible');
+  outputText.innerHTML = '<span class="cursor"></span>';
+
+  const systemPrompt = `You are a skilled, published fiction author renowned for vivid, immersive prose with strong voice and precise language. You write with depth and originality — no clichés, no purple prose, no hollow adjectives. Every sentence earns its place. You output only the requested paragraphs, nothing else.`;
+
+  let response;
+  try {
+    response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1500,
+        stream: true,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: buildPrompt() }]
+      })
+    });
+  } catch (err) {
+    showError('Network error: ' + err.message);
+    return;
+  }
+
+  if (!response.ok) {
+    const errBody = await response.text();
+    showError(`API error ${response.status}: ${errBody.slice(0, 200)}`);
+    return;
+  }
+
+  const reader  = response.body.getReader();
+  const decoder = new TextDecoder();
+  let   buffer  = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') break;
+
+        let evt;
+        try { evt = JSON.parse(data); } catch { continue; }
+
+        if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+          currentText += evt.delta.text;
+          renderOutput(currentText, true);
+        }
+
+        if (evt.type === 'error') {
+          showError(evt.error?.message || 'Stream error.');
+          return;
+        }
+      }
+    }
+  } catch (err) {
+    showError('Stream read error: ' + err.message);
+    return;
+  }
+
+  // Streaming complete
+  renderOutput(currentText, false);
+  isStreaming = false;
+  btnGenerate.disabled = false;
+  outputActions.classList.add('visible');
+}
+
+function renderOutput(text, showCursor) {
+  if (showCursor) {
+    outputText.innerHTML = escapeHtml(text) + '<span class="cursor"></span>';
+  } else {
+    outputText.textContent = text;
+  }
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function showError(msg) {
+  isStreaming = false;
+  btnGenerate.disabled = false;
+  outputText.innerHTML = `<span style="color:var(--burgundy);font-family:'Lato',sans-serif;font-size:0.9rem;">${escapeHtml(msg)}</span>`;
+  outputActions.classList.remove('visible');
+}
+
+btnGenerate.addEventListener('click', generate);
+
+// ── Post-gen actions ───────────────────────────────────────────────────────
+document.getElementById('btn-copy').addEventListener('click', () => {
+  if (!currentText) return;
+  navigator.clipboard.writeText(currentText).then(() => {
+    const flash = document.getElementById('copy-flash');
+    flash.classList.add('show');
+    setTimeout(() => flash.classList.remove('show'), 1800);
+  });
+});
+
+document.getElementById('btn-regen').addEventListener('click', () => {
+  if (!isStreaming) generate();
+});
+
+document.getElementById('btn-save').addEventListener('click', () => {
+  if (!currentText) return;
+  const genre   = document.getElementById('ctx-genre').value   || '';
+  const tone    = document.getElementById('ctx-tone').value.trim() || '';
+  const seed    = document.getElementById('seed').value.trim().slice(0, 60);
+  const label   = [genre, tone].filter(Boolean).join(' · ') || 'Passage';
+  const ts      = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  savedItems.push({ id: Date.now(), label, seed, text: currentText, ts });
+  renderSaved();
+  document.getElementById('saved-section').classList.add('visible');
+
+  const btn = document.getElementById('btn-save');
+  const orig = btn.textContent;
+  btn.textContent = '✓ Saved';
+  setTimeout(() => { btn.innerHTML = '&#128278; Save'; }, 1200);
+});
+
+// ── Saved list ─────────────────────────────────────────────────────────────
+function renderSaved() {
+  const list = document.getElementById('saved-list');
+  list.innerHTML = '';
+  [...savedItems].reverse().forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'saved-entry';
+    el.innerHTML = `
+      <button class="saved-entry-delete" data-id="${item.id}" title="Delete">&#10005;</button>
+      <div class="saved-entry-meta">${escapeHtml(item.label)} &mdash; ${escapeHtml(item.ts)}<br><em style="opacity:0.7">"${escapeHtml(item.seed)}${item.seed.length >= 60 ? '…' : ''}"</em></div>
+      <div class="saved-entry-text">${escapeHtml(item.text)}</div>
+    `;
+    list.appendChild(el);
+  });
+
+  list.querySelectorAll('.saved-entry-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.dataset.id);
+      savedItems = savedItems.filter(s => s.id !== id);
+      renderSaved();
+      if (!savedItems.length) document.getElementById('saved-section').classList.remove('visible');
+    });
+  });
+}
+
+// ── Enter key in seed (Shift+Enter = newline, Enter = generate) ────────────
+document.getElementById('seed').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !isStreaming) {
+    e.preventDefault();
+    generate();
+  }
+});
+</script>
+</body>
+</html>
