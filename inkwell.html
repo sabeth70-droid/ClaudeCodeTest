@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inkwell — Fiction Expansion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --parchment:    #F5ECD7;
+  --parchment-dk: #EAD9BC;
+  --parchment-md: #EFE2CB;
+  --ink:          #3B2A1A;
+  --ink-mid:      #5C3D22;
+  --ink-light:    #8C6A47;
+  --gold:         #C9A84C;
+  --gold-dk:      #A07828;
+  --gold-lt:      #E2C47A;
+  --burgundy:     #7B2D3E;
+  --burgundy-lt:  #A84558;
+  --cream:        #FBF5E8;
+  --shadow-warm:  rgba(59, 42, 26, 0.14);
+  --shadow-deep:  rgba(59, 42, 26, 0.28);
+  --radius:       12px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 400;
+  color: var(--ink);
+  background-color: var(--parchment);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 15% 0%,   rgba(201,168,76,0.10) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 100%, rgba(123,45,62,0.07)  0%, transparent 55%),
+    radial-gradient(ellipse at 50% 50%,  rgba(234,217,188,0.5) 0%, transparent 80%);
+  padding-bottom: 80px;
+}
+
+/* ── HEADER ─────────────────────────────────────────────────────────────── */
+header {
+  text-align: center;
+  padding: 48px 20px 36px;
+  position: relative;
+}
+
+.header-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.inkwell-icon {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px var(--shadow-warm));
+}
+
+.header-text h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 3.2rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-shadow: 0 2px 8px var(--shadow-warm);
+}
+
+.header-text p {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  margin-top: 5px;
+}
+
+.key-btn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--cream);
+  border: 1px solid var(--parchment-dk);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ink-light);
+  cursor: pointer;
+  box-shadow: 0 1px 4px var(--shadow-warm), inset 0 1px 0 rgba(255,255,255,0.6);
+  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.key-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold-dk);
+  box-shadow: 0 2px 8px var(--shadow-warm), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────────────────────── */
+.container {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ── CARD ───────────────────────────────────────────────────────────────── */
+.card {
+  background: linear-gradient(160deg, var(--cream) 0%, var(--parchment-md) 100%);
+  border: 1px solid var(--parchment-dk);
+  border-radius: var(--radius);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.7) inset,
+    0 6px 24px var(--shadow-warm),
+    0 1px 4px var(--shadow-deep);
+  padding: 30px 36px;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-lt), transparent);
+  opacity: 0.5;
+}
+
+.section-label {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: 0.06em;
+  color: var(--ink-light);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--parchment-dk), transparent);
+}
+
+/* ── SEED TEXTAREA ──────────────────────────────────────────────────────── */
+#seed {
+  width: 100%;
+  min-height: 120px;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid var(--parchment-dk);
+  border-radius: 8px;
+  padding: 16px 18px;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  color: var(--ink);
+  line-height: 1.65;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.25s, box-shadow 0.25s;
+  box-shadow: inset 0 2px 6px rgba(59,42,26,0.06);
+}
+#seed::placeholder {
+  color: var(--ink-light);
+  opacity: 0.55;
+  font-style: italic;
+  font-weight: 400;
+}
+#seed:focus {
+  border-color: var(--gold);
+  box-shadow: inset 0 2px 6px rgba(59,42,26,0.06), 0 0 0 3px rgba(201,168,76,0.14);
+}
+
+/* ── CONTEXT GRID ───────────────────────────────────────────────────────── */
+.context-section { margin-top: 24px; }
+
+.fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+  margin-top: 16px;
+}
+
+.field-wrap { display: flex; flex-direction: column; gap: 6px; }
+.field-wrap.full { grid-column: 1 / -1; }
+
+.field-wrap label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+}
+
+.field-wrap select,
+.field-wrap input[type="text"] {
+  background: rgba(255,255,255,0.55);
+  border: 1px solid var(--parchment-dk);
+  border-radius: 7px;
+  padding: 9px 13px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.88rem;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: inset 0 1px 3px rgba(59,42,26,0.05);
+  appearance: none;
+  -webkit-appearance: none;
+}
+.field-wrap select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238C6A47' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+.field-wrap select:focus,
+.field-wrap input[type="text"]:focus {
+  border-color: var(--gold);
+  box-shadow: inset 0 1px 3px rgba(59,42,26,0.05), 0 0 0 3px rgba(201,168,76,0.12);
+}
+.field-wrap select option { background: #F5ECD7; }
+
+/* ── PARAGRAPH COUNT ────────────────────────────────────────────────────── */
+.para-control {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: fit-content;
+}
+.para-btn {
+  width: 36px;
+  height: 36px;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid var(--parchment-dk);
+  color: var(--ink-mid);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 1px 3px var(--shadow-warm), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+.para-btn:first-child { border-radius: 7px 0 0 7px; border-right: none; }
+.para-btn:last-child  { border-radius: 0 7px 7px 0; border-left:  none; }
+.para-btn:hover { background: var(--parchment-dk); color: var(--ink); }
+.para-btn:active {
+  box-shadow: inset 0 2px 4px rgba(59,42,26,0.14);
+  transform: translateY(1px);
+}
+.para-val {
+  min-width: 44px;
+  height: 36px;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid var(--parchment-dk);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  user-select: none;
+}
+
+/* ── GENERATE BUTTON ────────────────────────────────────────────────────── */
+.generate-row {
+  margin-top: 28px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+}
+
+#btn-generate {
+  background: linear-gradient(160deg, var(--gold-lt) 0%, var(--gold) 40%, var(--gold-dk) 100%);
+  color: #FFF8EC;
+  border: none;
+  border-radius: 9px;
+  padding: 13px 38px;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow:
+    0 4px 16px rgba(160,120,40,0.38),
+    0 1px 0 rgba(255,255,255,0.25) inset,
+    0 -2px 0 rgba(0,0,0,0.12) inset;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.18);
+}
+#btn-generate:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 22px rgba(160,120,40,0.45),
+    0 1px 0 rgba(255,255,255,0.25) inset,
+    0 -2px 0 rgba(0,0,0,0.12) inset;
+}
+#btn-generate:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow:
+    0 2px 8px rgba(160,120,40,0.3),
+    0 1px 0 rgba(255,255,255,0.15) inset,
+    0 -1px 0 rgba(0,0,0,0.1) inset;
+}
+#btn-generate:disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.writing-dots span {
+  display: inline-block;
+  animation: dot-bounce 1.4s ease-in-out infinite;
+  font-style: normal;
+}
+.writing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.writing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dot-bounce {
+  0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+  40%            { opacity: 1;   transform: translateY(-3px); }
+}
+
+/* ── DIVIDER ────────────────────────────────────────────────────────────── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 4px 0 28px;
+  color: var(--gold);
+  font-size: 1.05rem;
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--parchment-dk), transparent);
+}
+
+/* ── OUTPUT CARD ────────────────────────────────────────────────────────── */
+#output-card {
+  display: none;
+}
+#output-card.visible {
+  display: block;
+}
+
+#output-text {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  line-height: 1.9;
+  color: var(--ink);
+  white-space: pre-wrap;
+  min-height: 40px;
+}
+
+.cursor-blink {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  background: var(--gold);
+  vertical-align: text-bottom;
+  margin-left: 2px;
+  border-radius: 1px;
+  animation: blink 0.85s step-start infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ── OUTPUT ACTIONS ─────────────────────────────────────────────────────── */
+.output-actions {
+  display: none;
+  padding-top: 20px;
+  margin-top: 20px;
+  border-top: 1px solid var(--parchment-dk);
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.output-actions.visible { display: flex; }
+
+.act-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--cream);
+  border: 1px solid var(--parchment-dk);
+  border-radius: 8px;
+  padding: 9px 20px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.83rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ink-mid);
+  cursor: pointer;
+  box-shadow: 0 1px 4px var(--shadow-warm), inset 0 1px 0 rgba(255,255,255,0.65);
+  transition: all 0.18s;
+}
+.act-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold-dk);
+  box-shadow: 0 2px 8px var(--shadow-warm), inset 0 1px 0 rgba(255,255,255,0.65);
+}
+.act-btn:active {
+  box-shadow: inset 0 2px 5px rgba(59,42,26,0.12);
+  transform: translateY(1px);
+}
+.act-btn.save {
+  color: var(--burgundy);
+  border-color: rgba(123,45,62,0.28);
+}
+.act-btn.save:hover {
+  border-color: var(--burgundy);
+  color: var(--burgundy);
+  background: rgba(123,45,62,0.04);
+}
+
+.copy-confirm {
+  font-size: 0.76rem;
+  color: var(--gold-dk);
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.25s;
+  white-space: nowrap;
+}
+.copy-confirm.show { opacity: 1; }
+
+/* ── SAVED SECTION ──────────────────────────────────────────────────────── */
+#saved-section {
+  display: none;
+}
+#saved-section.visible {
+  display: block;
+}
+
+.saved-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.saved-heading span.ornament { color: var(--gold); font-size: 1rem; }
+.saved-heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--parchment-dk), transparent);
+}
+
+.saved-list { display: flex; flex-direction: column; gap: 14px; }
+
+.saved-card {
+  background: linear-gradient(155deg, var(--cream), var(--parchment-md));
+  border: 1px solid var(--parchment-dk);
+  border-radius: 10px;
+  box-shadow: 0 3px 14px var(--shadow-warm), 0 1px 3px rgba(59,42,26,0.1);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+.saved-card:hover { box-shadow: 0 5px 20px var(--shadow-warm); }
+
+.saved-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  cursor: pointer;
+  gap: 12px;
+}
+.saved-card-header:hover .saved-preview { color: var(--ink); }
+
+.saved-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+.saved-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--gold-dk);
+}
+.saved-preview {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--ink-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.saved-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.expand-arrow {
+  color: var(--ink-light);
+  font-size: 0.7rem;
+  transition: transform 0.25s;
+  line-height: 1;
+}
+.saved-card.open .expand-arrow { transform: rotate(180deg); }
+
+.del-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-light);
+  opacity: 0.4;
+  font-size: 0.85rem;
+  padding: 4px 6px;
+  border-radius: 5px;
+  transition: opacity 0.2s, color 0.2s, background 0.2s;
+  line-height: 1;
+}
+.del-btn:hover { opacity: 1; color: var(--burgundy); background: rgba(123,45,62,0.08); }
+
+.saved-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+}
+.saved-card.open .saved-body { max-height: 2000px; }
+
+.saved-body-inner {
+  padding: 0 20px 20px;
+  border-top: 1px solid var(--parchment-dk);
+}
+.saved-full-text {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.98rem;
+  line-height: 1.82;
+  color: var(--ink);
+  white-space: pre-wrap;
+  padding-top: 16px;
+}
+
+/* ── API KEY MODAL ──────────────────────────────────────────────────────── */
+.modal-bg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 18, 8, 0.5);
+  backdrop-filter: blur(3px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.modal-bg.open { display: flex; }
+
+.modal {
+  background: linear-gradient(155deg, var(--cream), var(--parchment-md));
+  border: 1px solid var(--parchment-dk);
+  border-radius: 16px;
+  padding: 36px;
+  width: 90%;
+  max-width: 460px;
+  box-shadow: 0 24px 64px rgba(30,18,8,0.35), 0 0 0 1px rgba(255,255,255,0.4) inset;
+}
+.modal h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.modal p {
+  font-size: 0.83rem;
+  color: var(--ink-light);
+  line-height: 1.55;
+  margin-bottom: 20px;
+}
+.modal input[type="password"] {
+  width: 100%;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid var(--parchment-dk);
+  border-radius: 8px;
+  padding: 12px 15px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  color: var(--ink);
+  outline: none;
+  margin-bottom: 14px;
+  box-shadow: inset 0 2px 5px rgba(59,42,26,0.06);
+  transition: border-color 0.2s;
+}
+.modal input[type="password"]:focus { border-color: var(--gold); }
+.modal-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.modal-save {
+  background: linear-gradient(160deg, var(--gold-lt), var(--gold-dk));
+  color: #FFF8EC;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 26px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(160,120,40,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  transition: opacity 0.2s, transform 0.15s;
+}
+.modal-save:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.modal-clear, .modal-cancel {
+  background: var(--cream);
+  border: 1px solid var(--parchment-dk);
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.88rem;
+  color: var(--ink-light);
+  cursor: pointer;
+  box-shadow: 0 1px 4px var(--shadow-warm), inset 0 1px 0 rgba(255,255,255,0.5);
+  transition: all 0.18s;
+}
+.modal-clear:hover { border-color: var(--burgundy); color: var(--burgundy); }
+.modal-cancel:hover { border-color: var(--gold); color: var(--gold-dk); }
+
+.modal-status {
+  font-size: 0.8rem;
+  margin-top: 12px;
+  min-height: 18px;
+  color: var(--gold-dk);
+  font-weight: 500;
+}
+.modal-status.err { color: var(--burgundy); }
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────────────── */
+@media (max-width: 620px) {
+  .header-text h1  { font-size: 2.4rem; }
+  .inkwell-icon    { width: 44px; height: 44px; }
+  .card            { padding: 22px 20px; }
+  .fields-grid     { grid-template-columns: 1fr; }
+  .key-btn         { top: 16px; right: 16px; font-size: 0; gap: 0; padding: 8px 10px; }
+  .generate-row    { justify-content: stretch; }
+  #btn-generate    { flex: 1; justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="header-inner">
+    <svg class="inkwell-icon" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="28" cy="42" rx="16" ry="9" fill="#C9A84C" opacity="0.18"/>
+      <rect x="18" y="24" width="20" height="22" rx="4" fill="#3B2A1A"/>
+      <rect x="20" y="26" width="16" height="18" rx="3" fill="#5C3D22"/>
+      <ellipse cx="28" cy="24" rx="10" ry="4" fill="#3B2A1A"/>
+      <ellipse cx="28" cy="24" rx="8"  ry="2.5" fill="#7A5435"/>
+      <ellipse cx="28" cy="30" rx="5"  ry="1.5" fill="#C9A84C" opacity="0.35"/>
+      <!-- quill -->
+      <path d="M28 8 C32 10 38 6 36 16 C34 20 30 22 28 24" stroke="#C9A84C" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M28 24 L31 14" stroke="#E2C47A" stroke-width="0.8" fill="none" stroke-linecap="round" opacity="0.7"/>
+      <path d="M36 16 C33 17 30 20 28 24" stroke="#E2C47A" stroke-width="0.8" fill="none" opacity="0.5"/>
+      <!-- ink drop -->
+      <ellipse cx="28" cy="27" rx="2" ry="1.2" fill="#C9A84C" opacity="0.6"/>
+    </svg>
+    <div class="header-text">
+      <h1>Inkwell</h1>
+      <p>Fiction Expansion &bull; Powered by Claude</p>
+    </div>
+  </div>
+  <button class="key-btn" id="open-key-modal">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="5"/><path d="M21 2l-9.3 9.3"/><path d="M15 8l3 3"/></svg>
+    API Key
+  </button>
+</header>
+
+<!-- ── MAIN CONTAINER ── -->
+<div class="container">
+
+  <!-- Input card -->
+  <div class="card">
+    <div class="section-label">Your seed — a sentence, scene fragment, or raw idea</div>
+    <textarea id="seed" placeholder="She hadn't spoken since the fire. Now, standing at the edge of the cliff, the sea below indifferent to her grief, she opened her mouth and let the silence finally break…"></textarea>
+
+    <div class="context-section">
+      <div class="section-label">Context &amp; Style <span style="opacity:0.5;font-size:0.8rem;font-style:normal;font-weight:400">&nbsp;— all optional</span></div>
+      <div class="fields-grid">
+
+        <div class="field-wrap">
+          <label>Genre</label>
+          <select id="ctx-genre">
+            <option value="">— unspecified —</option>
+            <option>Fantasy / Sci-Fi</option>
+            <option>Horror / Dark Fiction</option>
+            <option>Literary / Character Drama</option>
+            <option>Thriller / Action</option>
+            <option>Romance</option>
+          </select>
+        </div>
+
+        <div class="field-wrap">
+          <label>Point of View</label>
+          <select id="ctx-pov">
+            <option value="">— unspecified —</option>
+            <option>First Person</option>
+            <option>Third Person Limited</option>
+            <option>Third Person Omniscient</option>
+          </select>
+        </div>
+
+        <div class="field-wrap">
+          <label>Tense</label>
+          <select id="ctx-tense">
+            <option value="">— unspecified —</option>
+            <option>Past</option>
+            <option>Present</option>
+          </select>
+        </div>
+
+        <div class="field-wrap">
+          <label>Tone / Mood</label>
+          <input type="text" id="ctx-tone" placeholder="e.g. tense and foreboding, melancholic, wry">
+        </div>
+
+        <div class="field-wrap">
+          <label>Character Name(s)</label>
+          <input type="text" id="ctx-chars" placeholder="e.g. Elara, The Magistrate, Rowan">
+        </div>
+
+        <div class="field-wrap">
+          <label>Setting / Location</label>
+          <input type="text" id="ctx-setting" placeholder="e.g. a foggy harbor town, the ruins of a cathedral">
+        </div>
+
+        <div class="field-wrap">
+          <label>Time Period</label>
+          <input type="text" id="ctx-period" placeholder="e.g. Victorian England, post-apocalyptic near future">
+        </div>
+
+        <div class="field-wrap">
+          <label>Paragraph Count</label>
+          <div class="para-control">
+            <button class="para-btn" id="para-dec" aria-label="Decrease">&#8722;</button>
+            <div class="para-val" id="para-val">3</div>
+            <button class="para-btn" id="para-inc" aria-label="Increase">&#43;</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="generate-row">
+      <button id="btn-generate">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <span id="btn-label">Generate</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Decorative divider -->
+  <div class="divider" id="divider" style="display:none">
+    <span>&#10022;</span>
+  </div>
+
+  <!-- Output card -->
+  <div class="card" id="output-card">
+    <div class="section-label">Expanded prose</div>
+    <div id="output-text"></div>
+    <div class="output-actions" id="output-actions">
+      <button class="act-btn" id="btn-copy">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copy
+        <span class="copy-confirm" id="copy-confirm">Copied!</span>
+      </button>
+      <button class="act-btn" id="btn-regen">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        Regenerate
+      </button>
+      <button class="act-btn save" id="btn-save">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save
+      </button>
+    </div>
+  </div>
+
+  <!-- Saved section -->
+  <div id="saved-section">
+    <div class="saved-heading">
+      <span class="ornament">&#10022;</span> Saved Passages
+    </div>
+    <div class="saved-list" id="saved-list"></div>
+  </div>
+
+</div>
+
+<!-- ── API KEY MODAL ── -->
+<div class="modal-bg" id="key-modal">
+  <div class="modal">
+    <h2>Anthropic API Key</h2>
+    <p>Your key is stored in this browser's <code>localStorage</code> and sent only to Anthropic's API — never anywhere else.</p>
+    <input type="password" id="key-input" placeholder="sk-ant-…">
+    <div class="modal-btns">
+      <button class="modal-save"   id="key-save">Save Key</button>
+      <button class="modal-clear"  id="key-clear">Clear</button>
+      <button class="modal-cancel" id="key-cancel">Cancel</button>
+    </div>
+    <div class="modal-status" id="key-status"></div>
+  </div>
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────
+let paraCount   = 3;
+let isStreaming = false;
+let currentText = '';
+let savedItems  = [];
+
+// ── ELEMENTS ──────────────────────────────────────────────────────────────
+const seedEl        = document.getElementById('seed');
+const btnGenerate   = document.getElementById('btn-generate');
+const btnLabel      = document.getElementById('btn-label');
+const outputCard    = document.getElementById('output-card');
+const outputText    = document.getElementById('output-text');
+const outputActions = document.getElementById('output-actions');
+const divider       = document.getElementById('divider');
+const savedSection  = document.getElementById('saved-section');
+const savedList     = document.getElementById('saved-list');
+const paraVal       = document.getElementById('para-val');
+const keyModal      = document.getElementById('key-modal');
+const keyInput      = document.getElementById('key-input');
+const keyStatus     = document.getElementById('key-status');
+
+// ── API KEY MODAL ─────────────────────────────────────────────────────────
+document.getElementById('open-key-modal').addEventListener('click', () => {
+  keyInput.value = '';
+  const k = localStorage.getItem('inkwell_key') || '';
+  setKeyStatus(k ? 'Current key: ' + k.slice(0, 12) + '…' : 'No key saved.', false);
+  keyModal.classList.add('open');
+  setTimeout(() => keyInput.focus(), 80);
+});
+
+document.getElementById('key-save').addEventListener('click', () => {
+  const v = keyInput.value.trim();
+  if (!v) { setKeyStatus('Please paste your key first.', true); return; }
+  localStorage.setItem('inkwell_key', v);
+  keyInput.value = '';
+  setKeyStatus('Key saved.', false);
+  setTimeout(() => keyModal.classList.remove('open'), 900);
+});
+
+document.getElementById('key-clear').addEventListener('click', () => {
+  localStorage.removeItem('inkwell_key');
+  keyInput.value = '';
+  setKeyStatus('Key cleared.', false);
+});
+
+document.getElementById('key-cancel').addEventListener('click', () => {
+  keyModal.classList.remove('open');
+});
+
+keyModal.addEventListener('click', e => {
+  if (e.target === keyModal) keyModal.classList.remove('open');
+});
+
+function setKeyStatus(msg, isErr) {
+  keyStatus.textContent = msg;
+  keyStatus.className = 'modal-status' + (isErr ? ' err' : '');
+}
+
+// ── PARAGRAPH COUNT ───────────────────────────────────────────────────────
+document.getElementById('para-dec').addEventListener('click', () => {
+  if (paraCount > 1) { paraCount--; paraVal.textContent = paraCount; }
+});
+document.getElementById('para-inc').addEventListener('click', () => {
+  if (paraCount < 5) { paraCount++; paraVal.textContent = paraCount; }
+});
+
+// ── PROMPT BUILDER ────────────────────────────────────────────────────────
+function buildUserPrompt() {
+  const seed    = seedEl.value.trim();
+  const genre   = document.getElementById('ctx-genre').value;
+  const pov     = document.getElementById('ctx-pov').value;
+  const tense   = document.getElementById('ctx-tense').value;
+  const tone    = document.getElementById('ctx-tone').value.trim();
+  const chars   = document.getElementById('ctx-chars').value.trim();
+  const setting = document.getElementById('ctx-setting').value.trim();
+  const period  = document.getElementById('ctx-period').value.trim();
+
+  const ctx = [];
+  if (genre)   ctx.push('Genre: '              + genre);
+  if (pov)     ctx.push('Point of view: '      + pov);
+  if (tense)   ctx.push('Tense: '              + tense);
+  if (tone)    ctx.push('Tone/mood: '          + tone);
+  if (chars)   ctx.push('Character name(s): '  + chars);
+  if (setting) ctx.push('Setting/location: '   + setting);
+  if (period)  ctx.push('Time period: '        + period);
+
+  let p = `Expand the following seed into exactly ${paraCount} paragraph${paraCount > 1 ? 's' : ''} of vivid, immersive fiction.\n`;
+  if (ctx.length) p += '\nStyle & context:\n' + ctx.join('\n') + '\n';
+  p += '\nSeed:\n' + seed + '\n\nBegin the prose directly. No preamble, no titles, no commentary.';
+  return p;
+}
+
+// ── GENERATE ─────────────────────────────────────────────────────────────
+async function generate() {
+  const seed = seedEl.value.trim();
+  if (!seed) {
+    seedEl.focus();
+    seedEl.style.borderColor = 'var(--burgundy)';
+    setTimeout(() => { seedEl.style.borderColor = ''; }, 1200);
+    return;
+  }
+
+  const apiKey = localStorage.getItem('inkwell_key') || '';
+  if (!apiKey) {
+    setKeyStatus('Please save your Anthropic API key first.', true);
+    keyModal.classList.add('open');
+    setTimeout(() => keyInput.focus(), 80);
+    return;
+  }
+
+  // UI: streaming state
+  isStreaming    = true;
+  currentText    = '';
+  btnGenerate.disabled = true;
+  btnLabel.innerHTML = '<span class="writing-dots">Writing<span>.</span><span>.</span><span>.</span></span>';
+
+  divider.style.display   = 'flex';
+  outputCard.classList.add('visible');
+  outputActions.classList.remove('visible');
+  outputText.innerHTML    = '<span class="cursor-blink"></span>';
+
+  // Scroll to output
+  setTimeout(() => outputCard.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+
+  const systemPrompt = `You are a skilled, published fiction author known for vivid, precise, immersive prose. Your writing has a strong, distinctive voice. You avoid clichés, purple prose, and any phrasing that sounds AI-generated or generic. Every word earns its place. You write only the requested paragraphs — no preamble, no commentary, no titles, no explanation before or after. Begin immediately with the prose.`;
+
+  let response;
+  try {
+    response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key':                              apiKey,
+        'anthropic-version':                      '2023-06-01',
+        'content-type':                           'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model:      'claude-sonnet-4-20250514',
+        max_tokens: 1600,
+        stream:     true,
+        system:     systemPrompt,
+        messages:   [{ role: 'user', content: buildUserPrompt() }]
+      })
+    });
+  } catch (err) {
+    return showError('Network error: ' + err.message);
+  }
+
+  if (!response.ok) {
+    const body = await response.text();
+    return showError('API error ' + response.status + ': ' + body.slice(0, 200));
+  }
+
+  // SSE stream parsing
+  const reader  = response.body.getReader();
+  const decoder = new TextDecoder();
+  let   buf     = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop(); // hold incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (raw === '[DONE]') break;
+
+        let evt;
+        try { evt = JSON.parse(raw); } catch { continue; }
+
+        if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+          currentText += evt.delta.text;
+          outputText.innerHTML = htmlEscape(currentText) + '<span class="cursor-blink"></span>';
+        }
+        if (evt.type === 'error') {
+          return showError(evt.error?.message || 'Stream error');
+        }
+      }
+    }
+  } catch (err) {
+    return showError('Stream error: ' + err.message);
+  }
+
+  // Done streaming
+  outputText.textContent = currentText;
+  isStreaming = false;
+  btnGenerate.disabled = false;
+  btnLabel.textContent = 'Generate';
+  outputActions.classList.add('visible');
+}
+
+function showError(msg) {
+  isStreaming = false;
+  btnGenerate.disabled = false;
+  btnLabel.textContent = 'Generate';
+  outputText.innerHTML = `<span style="font-family:'Inter',sans-serif;font-size:0.88rem;color:var(--burgundy);">${htmlEscape(msg)}</span>`;
+}
+
+function htmlEscape(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── BUTTON: GENERATE ─────────────────────────────────────────────────────
+btnGenerate.addEventListener('click', () => { if (!isStreaming) generate(); });
+
+// Enter in seed = generate (Shift+Enter = newline)
+seedEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !isStreaming) {
+    e.preventDefault();
+    generate();
+  }
+});
+
+// ── BUTTON: COPY ─────────────────────────────────────────────────────────
+document.getElementById('btn-copy').addEventListener('click', () => {
+  if (!currentText) return;
+  navigator.clipboard.writeText(currentText).then(() => {
+    const el = document.getElementById('copy-confirm');
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2000);
+  });
+});
+
+// ── BUTTON: REGENERATE ───────────────────────────────────────────────────
+document.getElementById('btn-regen').addEventListener('click', () => {
+  if (!isStreaming) generate();
+});
+
+// ── BUTTON: SAVE ─────────────────────────────────────────────────────────
+document.getElementById('btn-save').addEventListener('click', () => {
+  if (!currentText) return;
+
+  const genre   = document.getElementById('ctx-genre').value   || '';
+  const tone    = document.getElementById('ctx-tone').value.trim() || '';
+  const seed    = seedEl.value.trim();
+  const meta    = [genre, tone].filter(Boolean).join(' · ') || 'Prose';
+  const ts      = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  savedItems.push({ id: Date.now(), meta, seed, text: currentText, ts });
+  renderSaved();
+  savedSection.classList.add('visible');
+  setTimeout(() => savedSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+
+  const btn = document.getElementById('btn-save');
+  btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Saved`;
+  setTimeout(() => {
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save`;
+  }, 1500);
+});
+
+// ── SAVED PASSAGES ────────────────────────────────────────────────────────
+function renderSaved() {
+  savedList.innerHTML = '';
+  [...savedItems].reverse().forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'saved-card';
+    card.dataset.id = item.id;
+
+    const preview = item.text.replace(/\s+/g, ' ').trim().slice(0, 100);
+    const seedSnip = item.seed.slice(0, 55) + (item.seed.length > 55 ? '…' : '');
+
+    card.innerHTML = `
+      <div class="saved-card-header">
+        <div class="saved-meta">
+          <div class="saved-label">${htmlEscape(item.meta)} &mdash; ${htmlEscape(item.ts)}</div>
+          <div class="saved-preview">&ldquo;${htmlEscape(preview)}…&rdquo;</div>
+        </div>
+        <div class="saved-card-actions">
+          <span class="expand-arrow">&#9660;</span>
+          <button class="del-btn" title="Delete" data-id="${item.id}">&#10005;</button>
+        </div>
+      </div>
+      <div class="saved-body">
+        <div class="saved-body-inner">
+          <div class="saved-full-text">${htmlEscape(item.text)}</div>
+        </div>
+      </div>
+    `;
+
+    // Toggle expand
+    card.querySelector('.saved-card-header').addEventListener('click', e => {
+      if (e.target.closest('.del-btn')) return;
+      card.classList.toggle('open');
+    });
+
+    // Delete
+    card.querySelector('.del-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      savedItems = savedItems.filter(s => s.id !== item.id);
+      renderSaved();
+      if (!savedItems.length) savedSection.classList.remove('visible');
+    });
+
+    savedList.appendChild(card);
+  });
+}
+</script>
+</body>
+</html>
