@@ -42,7 +42,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   /* ── Static files ── */
-  let reqPath = req.url === '/' ? '/nutrix.html' : req.url;
+  let reqPath = req.url === '/' ? '/nutrix-v2.html' : req.url;
   const filePath = path.join(__dirname, reqPath);
   const ext = path.extname(filePath);
   const contentType = MIME[ext] || 'text/plain';
