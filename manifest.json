@@ -1,0 +1,15 @@
+{
+  "name": "NutriX — AI Supplement Stack Builder",
+  "short_name": "NutriX",
+  "description": "AI-powered supplement stack builder. Personalized, evidence-backed recommendations.",
+  "start_url": "nutrix.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FAF7F2",
+  "theme_color": "#7A9E7E",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="NutriX">
+  <meta name="theme-color" content="#FAF7F2">
+  <meta name="description" content="AI-powered supplement stack builder — personalized, evidence-backed recommendations.">
+  <title>NutriX — AI Supplement Stack Builder</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ─── TOKENS ─────────────────────────────────────── */
+    :root {
+      --bg:        #FAF7F2;
+      --surface:   #FFFFFF;
+      --text:      #2C2C2C;
+      --text-2:    #6B6966;
+      --text-3:    #9C9895;
+      --sage:      #7A9E7E;
+      --sage-dk:   #5F8263;
+      --sage-lt:   #EEF5EF;
+      --terra:     #C47C5A;
+      --terra-dk:  #A96548;
+      --terra-lt:  #FAF0EB;
+      --div:       rgba(44,44,44,0.08);
+      --sh-sm:     0 2px 8px rgba(44,44,44,0.07);
+      --sh-md:     0 4px 20px rgba(44,44,44,0.09);
+      --sh-lg:     0 8px 40px rgba(44,44,44,0.13);
+      --r-xs:      6px;
+      --r-sm:      10px;
+      --r-md:      14px;
+      --r-lg:      20px;
+      --font:      'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      --mw:        680px;
+    }
+
+    /* ─── RESET ──────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      -webkit-font-smoothing: antialiased;
+    }
+    button { font-family: var(--font); cursor: pointer; border: none; background: none; color: inherit; }
+    input, select, textarea { font-family: var(--font); color: var(--text); }
+    a { color: inherit; text-decoration: none; }
+
+    /* ─── LAYOUT ─────────────────────────────────────── */
+    .wrap {
+      max-width: var(--mw);
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    .pb-safe {
+      padding-bottom: max(80px, calc(60px + env(safe-area-inset-bottom)));
+    }
+
+    /* ─── HEADER ─────────────────────────────────────── */
+    .site-hd {
+      position: sticky; top: 0; z-index: 200;
+      background: rgba(250,247,242,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--div);
+    }
+    .hd-inner {
+      max-width: var(--mw); margin: 0 auto;
+      padding: 13px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo { display: flex; align-items: center; gap: 8px; user-select: none; }
+    .logo-word {
+      font-size: 21px; font-weight: 700; letter-spacing: -0.4px; color: var(--text);
+    }
+    .logo-word em { font-style: normal; color: var(--sage); }
+    .icon-btn {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-2);
+      transition: background 0.15s, color 0.15s;
+      -webkit-tap-highlight-color: transparent; flex-shrink: 0;
+    }
+    .icon-btn:hover { background: var(--div); color: var(--text); }
+    .icon-btn:active { background: rgba(44,44,44,0.12); color: var(--text); }
+
+    /* ─── VIEWS ──────────────────────────────────────── */
+    #intake-view, #results-view { display: none; }
+    #loading-view { display: none; min-height: calc(100vh - 58px); min-height: calc(-webkit-fill-available - 58px); flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 24px; }
+
+    /* ─── INTAKE ─────────────────────────────────────── */
+    .intake-hero { text-align: center; padding: 36px 0 32px; }
+    .intake-hero h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.6px; line-height: 1.18; margin-bottom: 12px; }
+    .intake-hero p { font-size: 16px; color: var(--text-2); max-width: 400px; margin: 0 auto; }
+
+    .form-block { margin-bottom: 26px; }
+    .form-lbl {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.05em;
+      text-transform: uppercase; color: var(--text-2);
+      display: block; margin-bottom: 10px;
+    }
+    .form-lbl .hint { font-weight: 400; letter-spacing: 0; text-transform: none; font-size: 12px; color: var(--text-3); margin-left: 6px; }
+
+    /* Pills */
+    .pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill {
+      display: inline-flex; align-items: center; height: 44px; padding: 0 16px;
+      border-radius: 100px; border: 1.5px solid var(--div); background: var(--surface);
+      font-size: 14px; font-weight: 500; color: var(--text-2);
+      cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+      user-select: none; white-space: nowrap;
+    }
+    .pill:hover { border-color: var(--sage); color: var(--sage); }
+    .pill:active { transform: scale(0.96); }
+    .pill.on { background: var(--sage); border-color: var(--sage); color: white; }
+
+    /* Textarea */
+    .f-area {
+      width: 100%; min-height: 82px; padding: 14px 16px;
+      border-radius: var(--r-sm); border: 1.5px solid var(--div);
+      background: var(--surface); font-size: 15px; resize: vertical;
+      outline: none; transition: border-color 0.15s;
+    }
+    .f-area:focus { border-color: var(--sage); }
+    .f-area::placeholder { color: var(--text-3); }
+
+    /* Select */
+    .f-sel {
+      width: 100%; min-height: 50px; padding: 14px 44px 14px 16px;
+      border-radius: var(--r-sm); border: 1.5px solid var(--div);
+      background: var(--surface); font-size: 15px;
+      outline: none; appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%239C9895' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 14px center;
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .f-sel:focus { border-color: var(--sage); }
+
+    /* Build CTA */
+    .btn-build {
+      width: 100%; min-height: 58px; padding: 16px 24px;
+      border-radius: var(--r-sm); background: var(--sage); color: white;
+      font-size: 16px; font-weight: 600; letter-spacing: 0.01em;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-build:hover { background: var(--sage-dk); }
+    .btn-build:active { transform: scale(0.98); background: var(--sage-dk); }
+
+    .inline-err { font-size: 13px; color: #C62828; margin-bottom: 10px; display: none; }
+
+    /* ─── LOADING ─────────────────────────────────────── */
+    @keyframes leafPulse { 0%,100% { transform: scale(1); opacity:1; } 50% { transform: scale(1.1); opacity:.82; } }
+    .pulse { animation: leafPulse 2.2s ease-in-out infinite; }
+
+    .load-headline { font-size: 20px; font-weight: 600; margin: 28px 0 8px; }
+    .load-sub { font-size: 15px; color: var(--text-2); min-height: 22px; transition: opacity 0.3s; }
+
+    /* Error within loading */
+    .load-err { display: none; max-width: 420px; width: 100%; text-align: center; padding: 0 8px; }
+    .load-err.show { display: block; }
+    .err-icon { font-size: 48px; margin-bottom: 16px; }
+    .err-box {
+      background: #FFEBEE; border: 1px solid #FFCDD2; border-radius: var(--r-sm);
+      padding: 14px 16px; font-size: 14px; color: #C62828;
+      text-align: left; margin: 12px 0 20px; line-height: 1.5; word-break: break-word;
+    }
+    .btn-retry {
+      min-height: 48px; padding: 12px 28px;
+      background: var(--terra); color: white; border-radius: var(--r-sm);
+      font-size: 15px; font-weight: 600; transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-retry:hover { background: var(--terra-dk); }
+    .btn-retry:active { transform: scale(0.97); }
+    .btn-muted {
+      display: inline-block; min-height: 44px; padding: 10px 16px;
+      font-size: 14px; color: var(--text-2); margin-top: 8px;
+      transition: color 0.15s; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-muted:hover { color: var(--text); }
+
+    /* ─── RESULTS ─────────────────────────────────────── */
+    .res-topbar {
+      display: flex; align-items: center; padding: 16px 0 8px; gap: 12px;
+    }
+    .btn-back {
+      display: flex; align-items: center; gap: 4px;
+      min-height: 44px; min-width: 44px; padding: 8px 4px;
+      font-size: 14px; font-weight: 500; color: var(--text-2);
+      transition: color 0.15s; white-space: nowrap; flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-back:hover, .btn-back:active { color: var(--text); }
+    .res-ttl-wrap { flex: 1; min-width: 0; }
+    .res-ttl { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+    .res-sub { font-size: 13px; color: var(--text-3); margin-top: 2px; }
+
+    /* Shared notice */
+    .shared-notice {
+      display: none; background: var(--sage-lt);
+      border: 1px solid rgba(122,158,126,0.35); border-radius: var(--r-sm);
+      padding: 12px 16px; font-size: 14px; color: var(--sage-dk);
+      margin-bottom: 16px; line-height: 1.4;
+    }
+    .shared-notice.show { display: block; }
+    .btn-link-inline {
+      color: var(--sage); font-weight: 600; text-decoration: underline;
+      background: none; border: none; cursor: pointer; font-size: 14px;
+      padding: 0; min-height: 0; display: inline;
+    }
+
+    /* Stack list */
+    .stack-list { display: flex; flex-direction: column; gap: 12px; }
+
+    /* Supplement card */
+    .s-card {
+      background: var(--surface); border-radius: var(--r-lg);
+      box-shadow: var(--sh-sm); border: 1px solid var(--div);
+      overflow: hidden; transition: box-shadow 0.2s;
+    }
+    .s-card:hover { box-shadow: var(--sh-md); }
+    .s-top { padding: 18px 20px 16px; }
+    .s-hd { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+    .s-rank {
+      flex-shrink: 0; margin-top: 3px;
+      padding: 2px 9px; background: var(--terra-lt); color: var(--terra);
+      font-size: 12px; font-weight: 700; border-radius: 100px; white-space: nowrap;
+    }
+    .s-name-block { flex: 1; min-width: 0; }
+    .s-name { font-size: 17px; font-weight: 700; line-height: 1.2; }
+    .s-form { font-size: 13px; font-weight: 500; color: var(--sage); margin-top: 2px; }
+    .s-score {
+      flex-shrink: 0; padding: 4px 11px; border-radius: 100px;
+      font-size: 13px; font-weight: 700; line-height: 1;
+    }
+    .sc-hi  { background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; }
+    .sc-mid { background: #FFF8E1; color: #F57F17; border: 1px solid #FFE082; }
+    .sc-lo  { background: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; }
+    .s-benefit { font-size: 14px; color: var(--text-2); line-height: 1.45; margin-bottom: 14px; }
+    .s-actions { display: flex; align-items: center; justify-content: space-between; }
+
+    .btn-amz {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 11px 18px; background: var(--terra); color: white;
+      border-radius: var(--r-xs); font-size: 14px; font-weight: 600;
+      transition: all 0.15s; min-height: 44px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-amz:hover { background: var(--terra-dk); }
+    .btn-amz:active { transform: scale(0.96); background: var(--terra-dk); }
+
+    .btn-expand {
+      width: 44px; height: 44px; border-radius: var(--r-xs);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-3); transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-expand:hover { background: var(--bg); color: var(--text); }
+    .btn-expand:active { background: var(--div); }
+    .chevron { transition: transform 0.25s; }
+    .btn-expand.open .chevron { transform: rotate(180deg); }
+
+    /* Card details */
+    .s-details { display: none; border-top: 1px solid var(--div); padding: 16px 20px 20px; }
+    .s-details.open { display: block; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+    .di { }
+    .di.wide { grid-column: 1 / -1; }
+    .di label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--text-3); display: block; margin-bottom: 4px;
+    }
+    .di p { font-size: 14px; line-height: 1.5; }
+    .di .cost { font-size: 15px; font-weight: 700; color: var(--terra); }
+    .brand-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+    .brand-chip {
+      padding: 3px 10px; background: var(--sage-lt); color: var(--sage-dk);
+      border-radius: 100px; font-size: 12px; font-weight: 500;
+    }
+
+    /* Share button */
+    .btn-share {
+      width: 100%; min-height: 54px; margin-top: 24px; padding: 14px 20px;
+      border-radius: var(--r-sm); border: 2px solid var(--sage);
+      background: transparent; color: var(--sage);
+      font-size: 15px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-share:hover { background: var(--sage-lt); }
+    .btn-share:active { transform: scale(0.98); background: var(--sage-lt); }
+
+    /* ─── MODALS ─────────────────────────────────────── */
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(30,28,25,0.45);
+      z-index: 500; display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.22s;
+    }
+    .modal-bg.open { opacity: 1; pointer-events: auto; }
+    .modal-sheet {
+      width: 100%; max-width: var(--mw); background: var(--surface);
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      padding: 24px 24px max(24px, env(safe-area-inset-bottom));
+      max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      transform: translateY(24px); transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
+    }
+    .modal-bg.open .modal-sheet { transform: translateY(0); }
+    .modal-drag { width: 36px; height: 4px; background: var(--div); border-radius: 2px; margin: 0 auto 20px; }
+    .modal-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .modal-ttl { font-size: 18px; font-weight: 700; }
+
+    /* Settings */
+    .set-row { margin-bottom: 18px; }
+    .set-row label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    .f-input {
+      width: 100%; min-height: 50px; padding: 13px 16px;
+      border-radius: var(--r-sm); border: 1.5px solid var(--div);
+      background: var(--bg); font-size: 15px; outline: none;
+      transition: border-color 0.15s;
+    }
+    .f-input:focus { border-color: var(--sage); }
+    .set-hint { font-size: 12px; color: var(--text-3); margin-top: 6px; line-height: 1.5; }
+    .set-hint a { color: var(--sage); text-decoration: underline; }
+    .btn-save {
+      width: 100%; min-height: 52px; padding: 14px;
+      background: var(--sage); color: white; border-radius: var(--r-sm);
+      font-size: 15px; font-weight: 600; transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-save:hover { background: var(--sage-dk); }
+    .btn-save:active { transform: scale(0.98); }
+
+    /* Share */
+    .share-lbl { font-size: 14px; color: var(--text-2); margin-bottom: 14px; }
+    .share-row { display: flex; gap: 10px; align-items: stretch; }
+    .share-url {
+      flex: 1; min-height: 48px; padding: 12px 14px;
+      border-radius: var(--r-sm); border: 1.5px solid var(--div);
+      background: var(--bg); font-size: 13px; color: var(--text-2);
+      outline: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: text;
+    }
+    .btn-copy {
+      min-height: 48px; padding: 12px 20px; background: var(--sage); color: white;
+      border-radius: var(--r-sm); font-size: 14px; font-weight: 600; white-space: nowrap;
+      transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-copy:hover { background: var(--sage-dk); }
+    .btn-copy:active { transform: scale(0.97); }
+    .copy-ok { display: none; font-size: 13px; color: var(--sage); text-align: center; margin-top: 10px; font-weight: 500; }
+    .btn-native-share {
+      width: 100%; min-height: 50px; margin-top: 12px; padding: 13px;
+      background: var(--bg); border: 1.5px solid var(--div); color: var(--text);
+      border-radius: var(--r-sm); font-size: 15px; font-weight: 500;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-native-share:hover { background: var(--div); }
+    .btn-native-share:active { transform: scale(0.98); }
+
+    /* ─── FOOTER ─────────────────────────────────────── */
+    .site-ft {
+      text-align: center; padding: 32px 24px 48px;
+      font-size: 12px; color: var(--text-3); line-height: 1.6;
+      max-width: var(--mw); margin: 0 auto;
+    }
+    .site-ft a { color: var(--sage); text-decoration: underline; }
+
+    /* ─── RESPONSIVE ─────────────────────────────────── */
+    @media (max-width: 480px) {
+      .intake-hero h1 { font-size: 26px; }
+      .s-top { padding: 16px; }
+      .s-details { padding: 14px 16px 18px; }
+      .modal-sheet { padding: 20px 20px max(20px, env(safe-area-inset-bottom)); }
+      .detail-grid { grid-template-columns: 1fr; }
+      .di.wide { grid-column: 1; }
+      .btn-amz { font-size: 13px; padding: 10px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ HEADER ══ -->
+  <header class="site-hd">
+    <div class="hd-inner">
+      <div class="logo">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <path d="M14 2C14 2 22 6 22 13C22 19 18.5 25 14 25C9.5 25 6 19 6 13C6 6 14 2 14 2Z" fill="#7A9E7E"/>
+          <line x1="14" y1="25" x2="14" y2="13" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <line x1="14" y1="19" x2="10" y2="15" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="14" y1="15" x2="18" y2="11" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <span class="logo-word">Nutri<em>X</em></span>
+      </div>
+      <button class="icon-btn" id="js-set-btn" aria-label="Open settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ══ INTAKE VIEW ══ -->
+  <div id="intake-view">
+    <div class="wrap pb-safe">
+      <div class="intake-hero">
+        <h1>Build Your Perfect<br>Supplement Stack</h1>
+        <p>AI research across clinical studies, lab testing data, and community wisdom — personalized to your goals.</p>
+      </div>
+
+      <div class="form-block">
+        <label class="form-lbl">Health Goals <span class="hint">Select all that apply</span></label>
+        <div class="pill-row" id="js-goals">
+          <div class="pill" data-v="Sleep &amp; Recovery">😴 Sleep &amp; Recovery</div>
+          <div class="pill" data-v="Focus &amp; Cognition">🧠 Focus &amp; Cognition</div>
+          <div class="pill" data-v="Energy">⚡ Energy</div>
+          <div class="pill" data-v="Gut Health">🌿 Gut Health</div>
+          <div class="pill" data-v="Mood &amp; Stress">🌊 Mood &amp; Stress</div>
+          <div class="pill" data-v="Weight Loss">🔥 Weight Loss</div>
+          <div class="pill" data-v="Immune Support">🛡️ Immune Support</div>
+        </div>
+      </div>
+
+      <div class="form-block">
+        <label class="form-lbl" for="js-symptoms">Current Symptoms <span class="hint">Optional — be specific</span></label>
+        <textarea class="f-area" id="js-symptoms" rows="3"
+          placeholder="e.g. brain fog, afternoon energy crashes, trouble falling asleep, anxious mornings…"></textarea>
+      </div>
+
+      <div class="form-block">
+        <label class="form-lbl" for="js-budget">Monthly Budget</label>
+        <select class="f-sel" id="js-budget">
+          <option value="under50">Under $50 / month</option>
+          <option value="50to100" selected>$50–$100 / month</option>
+          <option value="100plus">$100+ / month</option>
+        </select>
+      </div>
+
+      <div class="form-block">
+        <label class="form-lbl">Dietary Restrictions <span class="hint">Optional</span></label>
+        <div class="pill-row" id="js-restrict">
+          <div class="pill" data-v="Vegan">Vegan</div>
+          <div class="pill" data-v="Vegetarian">Vegetarian</div>
+          <div class="pill" data-v="No Gelatin Capsules">No Gelatin Caps</div>
+          <div class="pill" data-v="Gluten-Free">Gluten-Free</div>
+          <div class="pill" data-v="Dairy-Free">Dairy-Free</div>
+        </div>
+      </div>
+
+      <p class="inline-err" id="js-err-intake"></p>
+      <button class="btn-build" id="js-build-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Build My Stack
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ LOADING VIEW ══ -->
+  <div id="loading-view">
+    <div id="js-load-normal">
+      <svg class="pulse" width="88" height="88" viewBox="0 0 88 88" fill="none">
+        <circle cx="44" cy="44" r="40" fill="#EEF5EF"/>
+        <path d="M44 14C44 14 62 22 62 36C62 50 54 62 44 64C34 62 26 50 26 36C26 22 44 14 44 14Z" fill="#7A9E7E"/>
+        <line x1="44" y1="64" x2="44" y2="38" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <line x1="44" y1="52" x2="37" y2="45" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="44" y1="44" x2="51" y2="37" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <p class="load-headline">Researching your stack…</p>
+      <p class="load-sub" id="js-load-sub">Initializing…</p>
+    </div>
+    <div class="load-err" id="js-load-err">
+      <div class="err-icon">⚠️</div>
+      <p class="load-headline" style="margin-top:0">Something went wrong</p>
+      <div class="err-box" id="js-err-msg"></div>
+      <button class="btn-retry" id="js-retry-btn">Try Again</button><br>
+      <button class="btn-muted" id="js-back-form-btn">← Back to Form</button>
+    </div>
+  </div>
+
+  <!-- ══ RESULTS VIEW ══ -->
+  <div id="results-view">
+    <div class="wrap pb-safe">
+      <div class="shared-notice" id="js-shared-notice">
+        📋 Viewing a shared stack.
+        <button class="btn-link-inline" id="js-build-own">Build your own →</button>
+      </div>
+      <div class="res-topbar">
+        <button class="btn-back" id="js-back-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          New Stack
+        </button>
+        <div class="res-ttl-wrap">
+          <div class="res-ttl">Your Stack</div>
+          <div class="res-sub" id="js-res-sub"></div>
+        </div>
+        <div style="width:88px;flex-shrink:0;"></div>
+      </div>
+      <div class="stack-list" id="js-stack-list"></div>
+      <button class="btn-share" id="js-share-btn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+        Save &amp; Share My Stack
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ FOOTER ══ -->
+  <footer class="site-ft">
+    NutriX is for informational purposes only and does not constitute medical advice. Consult a qualified healthcare professional before starting any supplement regimen. Some product links are affiliate links that help support this platform at no extra cost to you.
+  </footer>
+
+  <!-- ══ SETTINGS MODAL ══ -->
+  <div class="modal-bg" id="js-set-modal" role="dialog" aria-modal="true" aria-labelledby="set-ttl">
+    <div class="modal-sheet">
+      <div class="modal-drag"></div>
+      <div class="modal-hd">
+        <h2 class="modal-ttl" id="set-ttl">API Settings</h2>
+        <button class="icon-btn" id="js-set-close" aria-label="Close settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="set-row">
+        <label for="js-api-key">Anthropic API Key</label>
+        <input type="password" class="f-input" id="js-api-key" placeholder="sk-ant-api03-…"
+          autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+        <p class="set-hint">
+          Stored only in your browser's local storage — never sent anywhere except directly to Anthropic's servers.
+          <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">Get a key →</a>
+        </p>
+      </div>
+      <button class="btn-save" id="js-set-save">Save</button>
+    </div>
+  </div>
+
+  <!-- ══ SHARE MODAL ══ -->
+  <div class="modal-bg" id="js-shr-modal" role="dialog" aria-modal="true" aria-labelledby="shr-ttl">
+    <div class="modal-sheet">
+      <div class="modal-drag"></div>
+      <div class="modal-hd">
+        <h2 class="modal-ttl" id="shr-ttl">Share Your Stack</h2>
+        <button class="icon-btn" id="js-shr-close" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <p class="share-lbl">Copy this link to share your personalized supplement stack with anyone.</p>
+      <div class="share-row">
+        <input type="text" class="share-url" id="js-shr-url" readonly>
+        <button class="btn-copy" id="js-copy-btn">Copy</button>
+      </div>
+      <p class="copy-ok" id="js-copy-ok">✓ Link copied to clipboard!</p>
+      <button class="btn-native-share" id="js-native-shr" style="display:none;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+          <polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+        </svg>
+        Share via…
+      </button>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+
+    /* ── CONSTANTS ───────────────────────────────────── */
+    const LOAD_MSGS = [
+      'Scanning clinical research…',
+      'Checking Examine.com for bioavailability data…',
+      'Cross-referencing PubMed studies…',
+      'Reading r/nootropics and r/supplements…',
+      'Verifying brands with Labdoor testing data…',
+      'Checking ConsumerLab third-party results…',
+      'Identifying highest-bioavailability forms…',
+      'Scoring brand credibility and transparency…',
+      'Reviewing biohacker community insights…',
+      'Ranking by priority for your goals…',
+      'Building your personalized stack…',
+      'Almost done…'
+    ];
+
+    const BUDGET_LBL = { under50: 'Under $50/mo', '50to100': '$50–$100/mo', '100plus': '$100+/mo' };
+    const BUDGET_CNT = { under50: '4–5', '50to100': '6–7', '100plus': '8–10' };
+
+    /* ── STATE ───────────────────────────────────────── */
+    let apiKey       = localStorage.getItem('nx_key') || '';
+    let currentStack = null;
+    let intakeSnap   = null;
+    let loadTimer    = null;
+    let loadIdx      = 0;
+
+    /* ── DOM ─────────────────────────────────────────── */
+    const $ = id => document.getElementById(id);
+    const intakeView  = $('intake-view');
+    const loadingView = $('loading-view');
+    const resultsView = $('results-view');
+
+    /* ── VIEWS ───────────────────────────────────────── */
+    function showView(n) {
+      intakeView.style.display  = n === 'intake'  ? 'block' : 'none';
+      loadingView.style.display = n === 'loading' ? 'flex'  : 'none';
+      resultsView.style.display = n === 'results' ? 'block' : 'none';
+    }
+
+    /* ── SETTINGS MODAL ──────────────────────────────── */
+    function openSettings() {
+      $('js-api-key').value = '';
+      $('js-api-key').placeholder = apiKey ? 'Leave blank to keep current key' : 'sk-ant-api03-…';
+      $('js-set-modal').classList.add('open');
+      setTimeout(() => $('js-api-key').focus(), 280);
+    }
+    function closeSettings() { $('js-set-modal').classList.remove('open'); }
+
+    $('js-set-btn').addEventListener('click', openSettings);
+    $('js-set-close').addEventListener('click', closeSettings);
+    $('js-set-modal').addEventListener('click', e => { if (e.target === $('js-set-modal')) closeSettings(); });
+    $('js-set-save').addEventListener('click', () => {
+      const v = $('js-api-key').value.trim();
+      if (v) { apiKey = v; localStorage.setItem('nx_key', v); }
+      closeSettings();
+    });
+
+    /* ── PILL TOGGLE ─────────────────────────────────── */
+    function setupPills(id) {
+      document.getElementById(id).querySelectorAll('.pill').forEach(p =>
+        p.addEventListener('click', () => p.classList.toggle('on'))
+      );
+    }
+    function getSelected(id) {
+      return [...document.getElementById(id).querySelectorAll('.pill.on')].map(p => p.dataset.v);
+    }
+    setupPills('js-goals');
+    setupPills('js-restrict');
+
+    /* ── LOADING ANIMATION ───────────────────────────── */
+    function startLoading() {
+      loadIdx = 0;
+      const el = $('js-load-sub');
+      el.textContent = LOAD_MSGS[0]; el.style.opacity = '1';
+      loadTimer = setInterval(() => {
+        loadIdx = (loadIdx + 1) % LOAD_MSGS.length;
+        el.style.opacity = '0';
+        setTimeout(() => { el.textContent = LOAD_MSGS[loadIdx]; el.style.opacity = '1'; }, 300);
+      }, 2600);
+    }
+    function stopLoading() { clearInterval(loadTimer); loadTimer = null; }
+
+    function showLoadNormal() {
+      $('js-load-normal').style.display = '';
+      $('js-load-err').classList.remove('show');
+    }
+    function showLoadError(msg) {
+      stopLoading();
+      $('js-load-normal').style.display = 'none';
+      $('js-err-msg').textContent = msg;
+      $('js-load-err').classList.add('show');
+    }
+
+    $('js-retry-btn').addEventListener('click', () => { showLoadNormal(); startLoading(); doApiCall(); });
+    $('js-back-form-btn').addEventListener('click', () => { showLoadNormal(); showView('intake'); });
+
+    /* ── PROMPT BUILDER ──────────────────────────────── */
+    function buildPrompt(d) {
+      const goals  = d.goals.length ? d.goals.join(', ') : 'General wellness';
+      const rest   = d.restrictions.length ? d.restrictions.join(', ') : 'None';
+      const budLbl = BUDGET_LBL[d.budget] || '$50–$100/mo';
+      const cnt    = BUDGET_CNT[d.budget] || '6–7';
+
+      return `You are NutriX, a world-class supplement researcher and nutritional biochemist.
+
+TASK: Research and build a personalized, evidence-backed supplement stack.
+
+══════════════════════════════════
+USER HEALTH INTAKE
+══════════════════════════════════
+Health Goals:         ${goals}
+Current Symptoms:     ${d.symptoms || 'None specified'}
+Monthly Budget:       ${budLbl}
+Dietary Restrictions: ${rest}
+══════════════════════════════════
+
+RESEARCH (use web search):
+1. Most effective compounds for these exact goals and symptoms
+2. Examine.com — optimal bioavailable forms and effective dosages
+3. PubMed — clinical evidence quality and study outcomes
+4. Reddit: r/nootropics, r/supplements, r/stackadvice — real-world experiences and brand opinions
+5. Labdoor.com and ConsumerLab.com — third-party purity and label accuracy testing
+6. Biohacker blogs, functional medicine sources, manufacturer transparency reports
+
+BIOAVAILABILITY RULES (always use the superior form):
+• Magnesium      → Glycinate/Bisglycinate (NOT Oxide — ~4% absorbed)
+• Vitamin B12    → Methylcobalamin (NOT Cyanocobalamin)
+• Folate         → Methylfolate/5-MTHF (NOT Folic Acid — MTHFR variant issue)
+• CoQ10          → Ubiquinol (NOT Ubiquinone, especially 35+)
+• Vitamin D      → D3 + K2 MK-7 (NOT D2)
+• Iron           → Bisglycinate (NOT Ferrous Sulfate — GI issues)
+• Zinc           → Bisglycinate or Picolinate (NOT Oxide — ~2% absorbed)
+• Curcumin       → Phytosome (Meriva) or BCM-95 (NOT plain extract)
+• Omega-3        → Triglyceride form (NOT ethyl ester)
+
+CREDIBILITY SCORING (0–100):
+• Third-party certs (NSF, Informed Sport, USP): 30 pts
+• Label transparency, no proprietary blends:    20 pts
+• Company reputation / GMP facility:            20 pts
+• User review sentiment across platforms:       15 pts
+• Price-per-dose value:                         15 pts
+
+RESTRICTIONS: ${rest !== 'None' ? `Strictly honour: ${rest}. Vegan/vegetarian/no-gelatin → HPMC or pullulan capsules only. Gluten-free/dairy-free → verify all fillers.` : 'None — standard capsules acceptable.'}
+
+STACK SIZE: Exactly ${cnt} supplements, ranked by impact priority for this user.
+
+─────────────────────────────────────────────────────────────────
+CRITICAL: Return ONLY a raw JSON object. No markdown. No backticks.
+No explanatory text before or after. Response MUST start with { and end with }.
+─────────────────────────────────────────────────────────────────
+
+JSON format (follow exactly):
+{
+  "stack": [
+    {
+      "rank": 1,
+      "name": "Short supplement name",
+      "form": "Specific best form",
+      "benefit": "One-line benefit directly tied to user goals",
+      "credibilityScore": 88,
+      "dosage": "Specific dosage with units (e.g. 400mg elemental)",
+      "timing": "When/how to take (e.g. Evening, 30 min before bed, with food)",
+      "formExplanation": "2-3 sentences: why this form, absorption mechanism, vs. alternatives",
+      "researchSummary": "2 sentences: key clinical findings, evidence quality",
+      "topBrands": ["Brand A (NSF Certified)", "Brand B", "Brand C"],
+      "monthlyEstimate": "$XX–$XX",
+      "searchTerms": "specific amazon search query"
+    }
+  ]
+}`;
+    }
+
+    /* ── CLAUDE API ──────────────────────────────────── */
+    async function callClaude(prompt) {
+      const messages = [{ role: 'user', content: prompt }];
+
+      for (let i = 0; i < 6; i++) {
+        const resp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-beta': 'web-search-2025-03-05'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 8192,
+            tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
+            messages
+          })
+        });
+
+        if (!resp.ok) {
+          let msg = `API error (${resp.status})`;
+          try { const e = await resp.json(); msg = e.error?.message || msg; } catch(_) {}
+          throw new Error(msg);
+        }
+
+        const data = await resp.json();
+
+        if (data.stop_reason === 'end_turn') {
+          return (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+        }
+
+        if (data.stop_reason === 'pause_turn') {
+          // Server-side loop hit iteration cap — continue from where it left off
+          messages.length = 0;
+          messages.push({ role: 'user', content: prompt });
+          messages.push({ role: 'assistant', content: data.content });
+          continue;
+        }
+
+        if (data.stop_reason === 'tool_use') {
+          // Fallback: built-in tool returned stop_reason tool_use — send empty results back
+          messages.push({ role: 'assistant', content: data.content });
+          const results = (data.content || []).filter(b => b.type === 'tool_use').map(b => ({
+            type: 'tool_result', tool_use_id: b.id,
+            content: typeof b.output === 'string' ? b.output : ''
+          }));
+          if (!results.length) break;
+          messages.push({ role: 'user', content: results });
+          continue;
+        }
+
+        // Any text content despite unexpected stop reason — try to use it
+        const fallback = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+        if (fallback) return fallback;
+        break;
+      }
+
+      throw new Error('Could not get a complete response from Claude. Please try again.');
+    }
+
+    /* ── JSON PARSER ─────────────────────────────────── */
+    function parseStack(raw) {
+      let s = raw.trim()
+        .replace(/^```json\s*/i, '').replace(/\s*```$/i, '')
+        .replace(/^```\s*/i,    '').replace(/\s*```$/i, '');
+      const a = s.indexOf('{'), b = s.lastIndexOf('}');
+      if (a !== -1 && b > a) s = s.slice(a, b + 1);
+      return JSON.parse(s);
+    }
+
+    /* ── BUILD FLOW ──────────────────────────────────── */
+    $('js-build-btn').addEventListener('click', () => {
+      const goals = getSelected('js-goals');
+      const errEl = $('js-err-intake');
+      if (!goals.length) {
+        errEl.textContent = 'Please select at least one health goal.';
+        errEl.style.display = 'block'; return;
+      }
+      errEl.style.display = 'none';
+      if (!apiKey) { openSettings(); return; }
+
+      intakeSnap = {
+        goals,
+        symptoms:     $('js-symptoms').value.trim(),
+        budget:       $('js-budget').value,
+        restrictions: getSelected('js-restrict')
+      };
+
+      showView('loading');
+      showLoadNormal();
+      startLoading();
+      doApiCall();
+    });
+
+    async function doApiCall() {
+      try {
+        const raw   = await callClaude(buildPrompt(intakeSnap));
+        const stack = parseStack(raw);
+        if (!stack?.stack?.length) throw new Error('Received an unexpected response format. Please try again.');
+        stopLoading();
+        currentStack = stack;
+        renderStack(stack.stack, intakeSnap);
+        $('js-shared-notice').classList.remove('show');
+        showView('results');
+        // Clear URL stack param if present
+        const u = new URL(location.href);
+        if (u.searchParams.has('stack')) { u.searchParams.delete('stack'); history.replaceState(null, '', u.toString()); }
+      } catch(err) {
+        showLoadError(err.message);
+      }
+    }
+
+    /* ── RENDER STACK ────────────────────────────────── */
+    function esc(s) {
+      if (s == null) return '';
+      const d = document.createElement('div');
+      d.textContent = String(s);
+      return d.innerHTML;
+    }
+
+    function renderStack(items, snap) {
+      const list = $('js-stack-list');
+      list.innerHTML = '';
+
+      const sub = snap?.goals?.length
+        ? snap.goals.slice(0, 3).join(' · ')
+        : `${items.length} supplements ranked by priority`;
+      $('js-res-sub').textContent = sub;
+
+      items.forEach(item => {
+        const score = Math.max(0, Math.min(100, parseInt(item.credibilityScore) || 70));
+        const sc = score >= 80 ? 'sc-hi' : score >= 60 ? 'sc-mid' : 'sc-lo';
+        const q = encodeURIComponent(item.searchTerms || `${item.name} ${item.form}`);
+        const amz = `https://www.amazon.com/s?k=${q}&tag=nutriven-20`;
+        const brands = (item.topBrands || []).map(b => `<span class="brand-chip">${esc(b)}</span>`).join('');
+
+        const card = document.createElement('div');
+        card.className = 's-card';
+        card.innerHTML = `
+          <div class="s-top">
+            <div class="s-hd">
+              <span class="s-rank">#${esc(item.rank)}</span>
+              <div class="s-name-block">
+                <div class="s-name">${esc(item.name)}</div>
+                <div class="s-form">${esc(item.form)}</div>
+              </div>
+              <span class="s-score ${sc}">${score}</span>
+            </div>
+            <p class="s-benefit">${esc(item.benefit)}</p>
+            <div class="s-actions">
+              <a href="${amz}" target="_blank" rel="noopener sponsored" class="btn-amz">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Buy on Amazon
+              </a>
+              <button class="btn-expand" aria-label="Show details" aria-expanded="false">
+                <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="s-details">
+            <div class="detail-grid">
+              <div class="di">
+                <label>Dosage</label>
+                <p>${esc(item.dosage)}</p>
+              </div>
+              <div class="di">
+                <label>When to Take</label>
+                <p>${esc(item.timing)}</p>
+              </div>
+              <div class="di wide">
+                <label>Why This Form?</label>
+                <p>${esc(item.formExplanation)}</p>
+              </div>
+              <div class="di wide">
+                <label>Research Findings</label>
+                <p>${esc(item.researchSummary)}</p>
+              </div>
+              ${brands ? `<div class="di wide"><label>Top Tested Brands</label><div class="brand-row">${brands}</div></div>` : ''}
+              <div class="di">
+                <label>Monthly Estimate</label>
+                <p class="cost">${esc(item.monthlyEstimate)}</p>
+              </div>
+            </div>
+          </div>
+        `;
+
+        const btn = card.querySelector('.btn-expand');
+        const det = card.querySelector('.s-details');
+        btn.addEventListener('click', () => {
+          const open = det.classList.toggle('open');
+          btn.classList.toggle('open', open);
+          btn.setAttribute('aria-expanded', open);
+        });
+
+        list.appendChild(card);
+      });
+    }
+
+    /* ── BACK / NAV ──────────────────────────────────── */
+    $('js-back-btn').addEventListener('click', () => { showView('intake'); $('js-shared-notice').classList.remove('show'); });
+    $('js-build-own').addEventListener('click', () => { showView('intake'); $('js-shared-notice').classList.remove('show'); });
+
+    /* ── SHARE ───────────────────────────────────────── */
+    function buildShareUrl() {
+      const enc = btoa(encodeURIComponent(JSON.stringify(currentStack)));
+      const u = new URL(location.href);
+      u.searchParams.set('stack', enc);
+      return u.toString();
+    }
+
+    $('js-share-btn').addEventListener('click', () => {
+      if (!currentStack) return;
+      const url = buildShareUrl();
+      $('js-shr-url').value = url;
+      $('js-copy-ok').style.display = 'none';
+      $('js-copy-btn').textContent = 'Copy';
+      $('js-native-shr').style.display = navigator.share ? 'flex' : 'none';
+      $('js-shr-modal').classList.add('open');
+    });
+
+    $('js-shr-close').addEventListener('click', () => $('js-shr-modal').classList.remove('open'));
+    $('js-shr-modal').addEventListener('click', e => { if (e.target === $('js-shr-modal')) $('js-shr-modal').classList.remove('open'); });
+
+    $('js-copy-btn').addEventListener('click', async () => {
+      const url = $('js-shr-url').value;
+      try { await navigator.clipboard.writeText(url); } catch(_) {
+        $('js-shr-url').select();
+        try { document.execCommand('copy'); } catch(_) {}
+      }
+      $('js-copy-ok').style.display = 'block';
+      $('js-copy-btn').textContent = 'Copied!';
+      setTimeout(() => { $('js-copy-ok').style.display = 'none'; $('js-copy-btn').textContent = 'Copy'; }, 2500);
+    });
+
+    $('js-native-shr').addEventListener('click', () => {
+      navigator.share({ title: 'My NutriX Supplement Stack', text: 'Check out my personalized supplement stack from NutriX!', url: $('js-shr-url').value }).catch(() => {});
+    });
+
+    /* ── INIT ────────────────────────────────────────── */
+    function init() {
+      const p = new URLSearchParams(location.search).get('stack');
+      if (p) {
+        try {
+          const data = JSON.parse(decodeURIComponent(atob(p)));
+          if (data?.stack?.length) {
+            currentStack = data;
+            renderStack(data.stack, null);
+            $('js-shared-notice').classList.add('show');
+            showView('results');
+            return;
+          }
+        } catch(_) {}
+      }
+      showView('intake');
+    }
+
+    init();
+  </script>
+</body>
+</html>
